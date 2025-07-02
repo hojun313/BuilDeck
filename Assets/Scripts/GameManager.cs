@@ -1,6 +1,7 @@
 
 using System.Collections.Generic;
 using UnityEngine;
+using System.Linq;
 
 public class GameManager : MonoBehaviour
 {
@@ -14,7 +15,14 @@ public class GameManager : MonoBehaviour
     public GameState currentState;
 
     public GameObject cardPrefab; // 여기에 CardPrototype 프리팹을 연결합니다.
+    public GameObject playerPrefab; // 플레이어 오브젝트 프리팹 (나중에 생성)
+    public int numberOfPlayers = 2; // 테스트를 위한 플레이어 수
+    public List<Player> players = new List<Player>();
+    public int currentPlayerIndex = 0; // 현재 턴 플레이어 인덱스
     public List<Card> deck = new List<Card>();
+    public List<Card> fieldDeck = new List<Card>();
+    public int fieldDeckSize = 5; // 필드 덱의 카드 수
+    public FieldDeckDisplay fieldDeckDisplay; // 필드 덱 디스플레이 참조
 
     void Start()
     {
@@ -22,6 +30,10 @@ public class GameManager : MonoBehaviour
         Debug.Log("Game Manager is ready. Current state: " + currentState);
         
         CreateDeck();
+        ShuffleDeck();
+        CreatePlayers();
+        DealCardsToPlayers(5); // 각 플레이어에게 5장씩 분배 (테스트용)
+        FillFieldDeck(); // 필드 덱 채우기
     }
 
     void CreateDeck()
@@ -36,12 +48,17 @@ public class GameManager : MonoBehaviour
                 newCard.cardRank = rank;
                 newCardObject.name = suit.ToString() + " " + rank.ToString();
                 deck.Add(newCard);
+
+                // CardDisplay 컴포넌트 설정
+                CardDisplay cardDisplay = newCardObject.GetComponent<CardDisplay>();
+                if (cardDisplay != null)
+                {
+                    cardDisplay.SetCard(newCard);
+                }
             }
         }
 
         Debug.Log("Deck created with " + deck.Count + " cards.");
-
-        ShuffleDeck();
     }
 
     void ShuffleDeck()
@@ -55,6 +72,179 @@ public class GameManager : MonoBehaviour
         }
 
         Debug.Log("Deck shuffled.");
+    }
+
+    void CreatePlayers()
+    {
+        for (int i = 0; i < numberOfPlayers; i++)
+        {
+            GameObject playerObject = Instantiate(playerPrefab, this.transform); // GameManager의 자식으로 생성
+            Player player = playerObject.GetComponent<Player>();
+            player.playerName = "Player " + (i + 1);
+            players.Add(player);
+            Debug.Log(player.playerName + " created as child of GameManager.");
+        }
+    }
+
+    void DealCardsToPlayers(int cardsPerPlayer)
+    {
+        for (int i = 0; i < cardsPerPlayer; i++)
+        {
+            foreach (Player player in players)
+            {
+                if (deck.Count > 0)
+                {
+                    Card cardToDeal = deck[0];
+                    deck.RemoveAt(0);
+                    player.AddCardToHand(cardToDeal);
+                    // 카드 오브젝트의 부모를 플레이어 오브젝트로 설정
+                    cardToDeal.transform.SetParent(player.transform);
+                    Debug.Log($"Card {cardToDeal.name} parented to {player.name}");
+                }
+                else
+                {
+                    Debug.LogWarning("Not enough cards in the deck to deal to all players.");
+                    return;
+                }
+            }
+        }
+        // 모든 플레이어의 핸드 디스플레이 업데이트
+        foreach (Player player in players)
+        {
+            HandDisplay handDisplay = player.GetComponent<HandDisplay>();
+            if (handDisplay != null)
+            {
+                handDisplay.DisplayHand(player.hand);
+            }
+        }
+    }
+
+    void FillFieldDeck()
+    {
+        for (int i = 0; i < fieldDeckSize; i++)
+        {
+            if (deck.Count > 0)
+            {
+                Card cardToField = deck[0];
+                deck.RemoveAt(0);
+                fieldDeck.Add(cardToField);
+            }
+            else
+            {
+                Debug.LogWarning("Not enough cards in the deck to fill the field deck.");
+                break;
+            }
+        }
+        Debug.Log("Field deck filled with " + fieldDeck.Count + " cards.");
+        if (fieldDeckDisplay != null)
+        {
+            fieldDeckDisplay.DisplayFieldDeck(fieldDeck);
+        }
+        Debug.Log("Current turn: " + players[currentPlayerIndex].playerName);
+    }
+
+    public void AdvanceTurn()
+    {
+        currentPlayerIndex = (currentPlayerIndex + 1) % players.Count;
+        Debug.Log("Current turn: " + players[currentPlayerIndex].playerName);
+    }
+
+    public void SwapCardWithFieldDeck(int playerCardIndex, int fieldCardIndex)
+    {
+        Player currentPlayer = players[currentPlayerIndex];
+
+        if (playerCardIndex < 0 || playerCardIndex >= currentPlayer.hand.Count)
+        {
+            Debug.LogError("Invalid player card index.");
+            return;
+        }
+
+        if (fieldCardIndex < 0 || fieldCardIndex >= fieldDeck.Count)
+        {
+            Debug.LogError("Invalid field card index.");
+            return;
+        }
+
+        Card playerCard = currentPlayer.hand[playerCardIndex];
+        Card fieldCard = fieldDeck[fieldCardIndex];
+
+        currentPlayer.hand[playerCardIndex] = fieldCard;
+        fieldDeck[fieldCardIndex] = playerCard;
+
+        Debug.Log(currentPlayer.playerName + " swapped " + playerCard.name + " with " + fieldCard.name + " from field deck.");
+
+        // 핸드 디스플레이 업데이트
+        HandDisplay handDisplay = currentPlayer.GetComponent<HandDisplay>();
+        if (handDisplay != null)
+        {
+            handDisplay.DisplayHand(currentPlayer.hand);
+        }
+
+        // 필드 덱 디스플레이 업데이트
+        if (fieldDeckDisplay != null)
+        {
+            fieldDeckDisplay.DisplayFieldDeck(fieldDeck);
+        }
+
+        AdvanceTurn();
+    }
+
+    public void TrashAndRefillFieldDeck()
+    {
+        Debug.Log("Trashing current field deck.");
+        // 현재 필드 덱의 카드 오브젝트들을 비활성화
+        foreach (Card card in fieldDeck)
+        {
+            card.gameObject.SetActive(false);
+        }
+        fieldDeck.Clear();
+
+        FillFieldDeck(); // 새로운 카드로 필드 덱 채우기
+        Debug.Log("Field deck refilled. Now player can choose to swap a card.");
+        // 이 시점에서 플레이어는 핸드 카드와 필드 덱 카드 중 하나를 교환하는 행동을 해야 합니다.
+        // 실제 게임에서는 UI를 통해 플레이어의 선택을 기다리게 됩니다.
+        // 현재는 테스트를 위해 바로 턴을 넘기지 않고, 교환 행동이 완료된 후 턴을 넘기도록 합니다.
+    }
+
+    public void DeclareStop()
+    {
+        currentState = GameState.GameOver;
+        Debug.Log(players[currentPlayerIndex].playerName + " declared stop! Game is over. Proceeding to result checking.");
+        DetermineWinner();
+    }
+
+    void DetermineWinner()
+    {
+        Player winningPlayer = null;
+        Player.PokerHandRank highestRank = Player.PokerHandRank.HighCard;
+
+        Debug.Log("\n--- Determining Winner ---");
+        foreach (Player player in players)
+        {
+            Player.PokerHandRank playerHandRank = player.EvaluateHand();
+            Debug.Log(player.playerName + "'s hand: " + string.Join(", ", player.hand.Select(c => c.cardSuit + " " + c.cardRank)) + " (Rank: " + playerHandRank + ")");
+
+            if (playerHandRank > highestRank)
+            {
+                highestRank = playerHandRank;
+                winningPlayer = player;
+            }
+            else if (playerHandRank == highestRank)
+            {
+                // 동점 처리 (현재는 먼저 나온 플레이어가 이기는 것으로 간주, 나중에 세부 규칙 추가)
+                // 예: 하이 카드 비교 등
+            }
+        }
+
+        if (winningPlayer != null)
+        {
+            Debug.Log("\nWinner: " + winningPlayer.playerName + " with a " + highestRank + "!");
+        }
+        else
+        {
+            Debug.Log("No winner determined.");
+        }
+        Debug.Log("--------------------------");
     }
 
     void Update()
