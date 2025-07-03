@@ -7,23 +7,33 @@ public class CardDisplay : MonoBehaviour
     public TextMeshPro rankText;
     public TextMeshPro suitText;
 
-    private Vector3 originalScale;
+    private Vector3 _currentUnselectedScale; // 카드가 선택되지 않았을 때의 현재 스케일을 저장합니다.
+    private Vector3 _currentBaseLocalPosition; // 카드가 선택되기 전의 기본 위치를 저장합니다.
     private const float selectedScaleMultiplier = 1.2f;
+    private const float selectedYOffset = 0.5f; // 선택 시 Y축으로 이동할 거리
 
     void Awake()
     {
-        originalScale = transform.localScale;
+        // Awake 시점의 스케일을 초기 unselected 스케일로 설정합니다.
+        _currentUnselectedScale = transform.localScale;
     }
 
     public void SetSelected(bool isSelected)
     {
         if (isSelected)
         {
-            transform.localScale = originalScale * selectedScaleMultiplier;
+            // 선택될 때 현재 스케일과 위치를 저장합니다.
+            _currentUnselectedScale = transform.localScale;
+            _currentBaseLocalPosition = transform.localPosition;
+
+            transform.localScale = _currentUnselectedScale * selectedScaleMultiplier;
+            transform.localPosition = _currentBaseLocalPosition + new Vector3(0, selectedYOffset, 0);
         }
         else
         {
-            transform.localScale = originalScale;
+            // 저장된 스케일과 위치로 돌아갑니다.
+            transform.localScale = _currentUnselectedScale;
+            transform.localPosition = _currentBaseLocalPosition;
         }
     }
 

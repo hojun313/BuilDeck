@@ -8,6 +8,7 @@ public class Card : MonoBehaviour
 
     public Suit cardSuit;
     public Rank cardRank;
+    public Player owner; // 이 카드를 소유한 플레이어
 
     private GameManager gameManager;
 
