@@ -107,8 +107,8 @@ public class GameManager : NetworkBehaviour
             {
                 GameObject newCardObject = Instantiate(cardPrefab, transform.position, Quaternion.identity);
                 Card newCard = newCardObject.GetComponent<Card>();
-                newCard.cardSuit = suit;
-                newCard.cardRank = rank;
+                newCard.cardSuit.Value = suit;
+                newCard.cardRank.Value = rank;
                 newCardObject.name = suit.ToString() + " " + rank.ToString();
                 
                 // NetworkObject 컴포넌트를 가져와 스폰합니다.

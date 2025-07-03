@@ -112,8 +112,8 @@ public class Player : NetworkBehaviour
         }
 
         // Sort ranks descending, Ace is 1 by default.
-        List<int> ranks = currentHandCards.Select(card => (int)card.cardRank).OrderByDescending(r => r).ToList();
-        List<Card.Suit> suits = currentHandCards.Select(card => card.cardSuit).ToList();
+        List<int> ranks = currentHandCards.Select(card => (int)card.cardRank.Value).OrderByDescending(r => r).ToList();
+        List<Card.Suit> suits = currentHandCards.Select(card => card.cardSuit.Value).ToList();
 
         bool isFlush = suits.Distinct().Count() == 1;
         bool isStraight = IsStraight(ranks);

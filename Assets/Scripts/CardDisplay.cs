@@ -46,11 +46,11 @@ public class CardDisplay : MonoBehaviour
             return;
         }
 
-        rankText.text = GetRankString(card.cardRank);
-        suitText.text = GetSuitString(card.cardSuit);
+        rankText.text = GetRankString(card.cardRank.Value);
+        suitText.text = GetSuitString(card.cardSuit.Value);
 
         // 색상 변경 (선택 사항: 스페이드/클럽은 검정, 하트/다이아는 빨강)
-        if (card.cardSuit == Card.Suit.Heart || card.cardSuit == Card.Suit.Diamond)
+        if (card.cardSuit.Value == Card.Suit.Heart || card.cardSuit.Value == Card.Suit.Diamond)
         {
             rankText.color = Color.red;
             suitText.color = Color.red;
