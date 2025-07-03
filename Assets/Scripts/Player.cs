@@ -33,76 +33,92 @@ public class Player : MonoBehaviour
         Debug.Log(playerName + "'s hand cleared.");
     }
 
-    public PokerHandRank EvaluateHand()
+    public class HandEvaluationResult
     {
-        if (hand.Count != 5) // 포커 족보는 5장 기준으로 평가
+        public PokerHandRank Rank { get; set; }
+        public List<int> HighCardRanks { get; set; } = new List<int>();
+    }
+
+    public HandEvaluationResult EvaluateHand()
+    {
+        if (hand.Count != 5)
         {
             Debug.LogWarning("Hand must contain 5 cards for poker evaluation.");
-            return PokerHandRank.HighCard;
+            return new HandEvaluationResult { Rank = PokerHandRank.HighCard };
         }
 
-        // 카드 정렬 (족보 평가를 위해)
-        List<int> ranks = hand.Select(card => (int)card.cardRank).OrderBy(r => r).ToList();
+        // Sort ranks descending, Ace is 1 by default.
+        List<int> ranks = hand.Select(card => (int)card.cardRank).OrderByDescending(r => r).ToList();
         List<Card.Suit> suits = hand.Select(card => card.cardSuit).ToList();
 
         bool isFlush = suits.Distinct().Count() == 1;
         bool isStraight = IsStraight(ranks);
 
-        // 랭크별 카운트
-        var rankCounts = ranks.GroupBy(r => r).Select(g => new { Rank = g.Key, Count = g.Count() }).OrderByDescending(x => x.Count).ThenByDescending(x => x.Rank).ToList();
+        // For tie-breaking Ace-high straights (and straight flushes), we need to treat Ace as 14.
+        List<int> highCardRanks = new List<int>(ranks);
+        if (isStraight && ranks.SequenceEqual(new List<int> { 13, 12, 11, 10, 1 }))
+        {
+            highCardRanks = new List<int> { 14, 13, 12, 11, 10 }; // Remap for correct comparison
+        }
 
-        // 족보 판별
+        var rankCounts = ranks.GroupBy(r => r)
+                              .Select(g => new { Rank = g.Key, Count = g.Count() })
+                              .OrderByDescending(x => x.Count)
+                              .ThenByDescending(x => x.Rank)
+                              .ToList();
+
+        // Evaluation logic
         if (isStraight && isFlush)
         {
-            if (ranks.SequenceEqual(new List<int> { 1, 10, 11, 12, 13 })) // Royal Flush (A, K, Q, J, 10)
-            {
-                return PokerHandRank.RoyalFlush;
-            }
-            return PokerHandRank.StraightFlush;
+            bool isRoyal = highCardRanks.Contains(14); // Check if it was an Ace-high straight
+            return new HandEvaluationResult { Rank = isRoyal ? PokerHandRank.RoyalFlush : PokerHandRank.StraightFlush, HighCardRanks = highCardRanks };
         }
-        else if (rankCounts[0].Count == 4)
+        if (rankCounts[0].Count == 4)
         {
-            return PokerHandRank.FourOfAKind;
+            return new HandEvaluationResult { Rank = PokerHandRank.FourOfAKind, HighCardRanks = rankCounts.Select(rc => rc.Rank).ToList() };
         }
-        else if (rankCounts[0].Count == 3 && rankCounts[1].Count == 2)
+        if (rankCounts[0].Count == 3 && rankCounts[1].Count == 2)
         {
-            return PokerHandRank.FullHouse;
+            return new HandEvaluationResult { Rank = PokerHandRank.FullHouse, HighCardRanks = rankCounts.Select(rc => rc.Rank).ToList() };
         }
-        else if (isFlush)
+        if (isFlush)
         {
-            return PokerHandRank.Flush;
+            return new HandEvaluationResult { Rank = PokerHandRank.Flush, HighCardRanks = ranks };
         }
-        else if (isStraight)
+        if (isStraight)
         {
-            return PokerHandRank.Straight;
+            return new HandEvaluationResult { Rank = PokerHandRank.Straight, HighCardRanks = highCardRanks };
         }
-        else if (rankCounts[0].Count == 3)
+        if (rankCounts[0].Count == 3)
         {
-            return PokerHandRank.ThreeOfAKind;
+            return new HandEvaluationResult { Rank = PokerHandRank.ThreeOfAKind, HighCardRanks = rankCounts.Select(rc => rc.Rank).ToList() };
         }
-        else if (rankCounts[0].Count == 2 && rankCounts[1].Count == 2)
+        if (rankCounts[0].Count == 2 && rankCounts[1].Count == 2)
         {
-            return PokerHandRank.TwoPair;
+            return new HandEvaluationResult { Rank = PokerHandRank.TwoPair, HighCardRanks = rankCounts.Select(rc => rc.Rank).ToList() };
         }
-        else if (rankCounts[0].Count == 2)
+        if (rankCounts[0].Count == 2)
         {
-            return PokerHandRank.Pair;
+            return new HandEvaluationResult { Rank = PokerHandRank.Pair, HighCardRanks = rankCounts.Select(rc => rc.Rank).ToList() };
         }
-        else
-        {
-            return PokerHandRank.HighCard;
-        }
+
+        return new HandEvaluationResult { Rank = PokerHandRank.HighCard, HighCardRanks = ranks };
     }
 
     private bool IsStraight(List<int> ranks)
     {
-        // Ace can be high (13) or low (1)
-        if (ranks.SequenceEqual(new List<int> { 1, 2, 3, 4, 5 })) return true; // A,2,3,4,5
-        if (ranks.SequenceEqual(new List<int> { 10, 11, 12, 13, 1 })) return true; // 10,J,Q,K,A (Ace as 14)
+        // ranks are sorted descending.
+        // Check for the special case of 10-J-Q-K-A ("Broadway") where Ace (1) is at the end.
+        if (ranks.SequenceEqual(new List<int> { 13, 12, 11, 10, 1 }))
+        {
+            return true;
+        }
 
+        // Check for all other consecutive straights.
+        // This includes the A-2-3-4-5 "Wheel", which would be [5, 4, 3, 2, 1].
         for (int i = 0; i < ranks.Count - 1; i++)
         {
-            if (ranks[i+1] - ranks[i] != 1)
+            if (ranks[i] - ranks[i+1] != 1)
             {
                 return false;
             }

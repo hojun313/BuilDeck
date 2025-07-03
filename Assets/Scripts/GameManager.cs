@@ -215,34 +215,47 @@ public class GameManager : MonoBehaviour
 
     void DetermineWinner()
     {
-        Player winningPlayer = null;
-        Player.PokerHandRank highestRank = Player.PokerHandRank.HighCard;
+        Player winner = null;
+        Player.HandEvaluationResult bestHand = null;
 
         Debug.Log("\n--- Determining Winner ---");
         foreach (Player player in players)
         {
-            Player.PokerHandRank playerHandRank = player.EvaluateHand();
-            Debug.Log(player.playerName + "'s hand: " + string.Join(", ", player.hand.Select(c => c.cardSuit + " " + c.cardRank)) + " (Rank: " + playerHandRank + ")");
+            Player.HandEvaluationResult currentHand = player.EvaluateHand();
+            Debug.Log($"{player.playerName}'s hand: {string.Join(", ", player.hand.Select(c => c.cardSuit + " " + c.cardRank))} (Rank: {currentHand.Rank})");
 
-            if (playerHandRank > highestRank)
+            if (winner == null || currentHand.Rank > bestHand.Rank)
             {
-                highestRank = playerHandRank;
-                winningPlayer = player;
+                winner = player;
+                bestHand = currentHand;
             }
-            else if (playerHandRank == highestRank)
+            else if (currentHand.Rank == bestHand.Rank)
             {
-                // 동점 처리 (현재는 먼저 나온 플레이어가 이기는 것으로 간주, 나중에 세부 규칙 추가)
-                // 예: 하이 카드 비교 등
+                // 동점 처리 로직
+                for (int i = 0; i < currentHand.HighCardRanks.Count; i++)
+                {
+                    if (currentHand.HighCardRanks[i] > bestHand.HighCardRanks[i])
+                    {
+                        winner = player;
+                        bestHand = currentHand;
+                        break; // 더 높은 카드를 찾았으므로 루프 종료
+                    }
+                    else if (currentHand.HighCardRanks[i] < bestHand.HighCardRanks[i])
+                    {
+                        break; // 현재 플레이어의 패가 더 낮으므로 루프 종료
+                    }
+                    // 두 카드가 같으면 다음 카드로 계속 비교
+                }
             }
         }
 
-        if (winningPlayer != null)
+        if (winner != null)
         {
-            Debug.Log("\nWinner: " + winningPlayer.playerName + " with a " + highestRank + "!");
+            Debug.Log($"\nWinner: {winner.playerName} with a {bestHand.Rank}!");
         }
         else
         {
-            Debug.Log("No winner determined.");
+            Debug.Log("It's a draw! No single winner determined.");
         }
         Debug.Log("--------------------------");
     }
