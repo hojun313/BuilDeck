@@ -1,14 +1,15 @@
 
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 public class GameUI : MonoBehaviour
 {
     public GameManager gameManager;
 
-    public Button swapCardButton;
     public Button trashAndRefillButton;
     public Button declareStopButton;
+    public TextMeshProUGUI statusText; // 상태 메시지를 표시할 텍스트
 
     void Start()
     {
@@ -25,10 +26,6 @@ public class GameUI : MonoBehaviour
         }
 
         // 버튼 클릭 이벤트 리스너 추가
-        if (swapCardButton != null)
-        {
-            swapCardButton.onClick.AddListener(OnSwapCardButtonClicked);
-        }
         if (trashAndRefillButton != null)
         {
             trashAndRefillButton.onClick.AddListener(OnTrashAndRefillButtonClicked);
@@ -39,15 +36,26 @@ public class GameUI : MonoBehaviour
         }
     }
 
-    void OnSwapCardButtonClicked()
+    public void UpdateButtonStates(GameManager.GameState currentState)
     {
-        // 테스트를 위해 임의의 카드 인덱스를 사용합니다.
-        // 실제 게임에서는 플레이어가 선택한 카드 인덱스를 받아와야 합니다.
-        int playerCardIndex = 0; // 플레이어 핸드의 첫 번째 카드
-        int fieldCardIndex = 0;  // 필드 덱의 첫 번째 카드
+        bool isPlaying = currentState == GameManager.GameState.Playing;
 
-        Debug.Log("Swap Card Button Clicked!");
-        gameManager.SwapCardWithFieldDeck(playerCardIndex, fieldCardIndex);
+        if (trashAndRefillButton != null) 
+        {
+            trashAndRefillButton.interactable = isPlaying;
+        }
+        if (declareStopButton != null) 
+        {
+            declareStopButton.interactable = isPlaying;
+        }
+    }
+
+    public void UpdateStatusText(string message)
+    {
+        if (statusText != null)
+        {
+            statusText.text = message;
+        }
     }
 
     void OnTrashAndRefillButtonClicked()

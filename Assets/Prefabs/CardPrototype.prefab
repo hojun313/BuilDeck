@@ -366,6 +366,7 @@ GameObject:
   - component: {fileID: 3423901773622826000}
   - component: {fileID: 251738613539977038}
   - component: {fileID: 5408523709156018062}
+  - component: {fileID: 3947828315803224134}
   m_Layer: 0
   m_Name: CardPrototype
   m_TagString: Untagged
@@ -493,3 +494,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   rankText: {fileID: 2707025805491136793}
   suitText: {fileID: 4417437673916029364}
+--- !u!65 &3947828315803224134
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7060323640749613664}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.99999994, y: 1, z: 6.1232336e-17}
+  m_Center: {x: 0, y: 0, z: 0}

@@ -7,6 +7,26 @@ public class CardDisplay : MonoBehaviour
     public TextMeshPro rankText;
     public TextMeshPro suitText;
 
+    private Vector3 originalScale;
+    private const float selectedScaleMultiplier = 1.2f;
+
+    void Awake()
+    {
+        originalScale = transform.localScale;
+    }
+
+    public void SetSelected(bool isSelected)
+    {
+        if (isSelected)
+        {
+            transform.localScale = originalScale * selectedScaleMultiplier;
+        }
+        else
+        {
+            transform.localScale = originalScale;
+        }
+    }
+
     public void SetCard(Card card)
     {
         if (card == null)
