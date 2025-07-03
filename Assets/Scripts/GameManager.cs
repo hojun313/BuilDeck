@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
 using System.Collections; // Coroutine을 위해 추가
+using Unity.Netcode; // NetworkBehaviour를 위해 추가
 
-public class GameManager : MonoBehaviour
+public class GameManager : NetworkBehaviour
 {
     public enum GameState
     {
@@ -31,19 +32,52 @@ public class GameManager : MonoBehaviour
 
     private const float cardMoveDuration = 0.3f; // 카드 이동 애니메이션 지속 시간
 
-    void Start()
+    public override void OnNetworkSpawn()
     {
-        currentState = GameState.Setup;
-        Debug.Log("Game Manager is ready. Current state: " + currentState);
-
-        if (gameUI == null)
+        if (IsServer)
         {
-            gameUI = FindObjectOfType<GameUI>();
+            Debug.Log("Game Manager is ready. Current state: " + currentState);
+
+            if (gameUI == null)
+            {
+                gameUI = FindObjectOfType<GameUI>();
+            }
+            
+            CreateDeck();
+            ShuffleDeck();
+            // CreatePlayers(); // NetworkManager가 플레이어를 생성하므로 주석 처리
+            NetworkManager.Singleton.OnClientConnectedCallback += HandleClientConnected; // 클라이언트 연결 이벤트 구독
+
+            // 모든 클라이언트가 연결된 후 게임 시작 (테스트를 위해 임시로 바로 시작)
+            // StartGame();
         }
-        
-        CreateDeck();
-        ShuffleDeck();
-        CreatePlayers();
+    }
+
+    void HandleClientConnected(ulong clientId)
+    {
+        // 클라이언트가 연결될 때마다 해당 클라이언트의 플레이어 오브젝트를 찾아서 players 리스트에 추가
+        // NetworkManager가 플레이어 오브젝트를 생성한 후 호출되므로, 여기서 플레이어 오브젝트를 찾을 수 있습니다.
+        NetworkObject clientNetworkObject = NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(clientId);
+        if (clientNetworkObject != null)
+        {
+            Player player = clientNetworkObject.GetComponent<Player>();
+            if (player != null && !players.Contains(player))
+            {
+                player.playerName = "Player " + (players.Count + 1);
+                players.Add(player);
+                Debug.Log(player.playerName + " connected.");
+            }
+        }
+
+        // 모든 플레이어가 연결되면 게임 시작 (예시: numberOfPlayers에 도달하면)
+        if (players.Count == numberOfPlayers)
+        {
+            StartGame();
+        }
+    }
+
+    void StartGame()
+    {
         DealCardsToPlayers(5); // 각 플레이어에게 5장씩 분배 (테스트용)
         FillFieldDeck(); // 필드 덱 채우기
 
@@ -64,6 +98,9 @@ public class GameManager : MonoBehaviour
 
     void CreateDeck()
     {
+        // 서버에서만 카드 생성 및 스폰
+        if (!IsServer) return;
+
         foreach (Card.Suit suit in System.Enum.GetValues(typeof(Card.Suit)))
         {
             foreach (Card.Rank rank in System.Enum.GetValues(typeof(Card.Rank)))
@@ -73,18 +110,33 @@ public class GameManager : MonoBehaviour
                 newCard.cardSuit = suit;
                 newCard.cardRank = rank;
                 newCardObject.name = suit.ToString() + " " + rank.ToString();
-                deck.Add(newCard);
-
-                // CardDisplay 컴포넌트 설정
-                CardDisplay cardDisplay = newCardObject.GetComponent<CardDisplay>();
-                if (cardDisplay != null)
+                
+                // NetworkObject 컴포넌트를 가져와 스폰합니다.
+                NetworkObject networkObject = newCardObject.GetComponent<NetworkObject>();
+                if (networkObject != null)
                 {
-                    cardDisplay.SetCard(newCard);
+                    networkObject.Spawn(); // 모든 클라이언트에 카드를 스폰합니다.
+                    Debug.Log($"[GameManager] Spawning card: {newCardObject.name}, NetworkObjectId: {networkObject.NetworkObjectId}");
                 }
+                else
+                {
+                    Debug.LogError("CardPrefab is missing NetworkObject component!");
+                    Destroy(newCardObject); // NetworkObject가 없으면 오브젝트를 파괴합니다.
+                    continue;
+                }
+
+                deck.Add(newCard); // 서버의 로컬 덱 리스트에 추가
+
+                // CardDisplay 컴포넌트 설정은 Card.cs의 OnNetworkSpawn에서 처리하는 것이 더 견고합니다.
+                // CardDisplay cardDisplay = newCardObject.GetComponent<CardDisplay>();
+                // if (cardDisplay != null)
+                // {
+                //     cardDisplay.SetCard(newCard);
+                // }
             }
         }
 
-        Debug.Log("Deck created with " + deck.Count + " cards.");
+        Debug.Log("Deck created and spawned with " + deck.Count + " cards.");
     }
 
     void ShuffleDeck()
@@ -102,31 +154,27 @@ public class GameManager : MonoBehaviour
 
     void CreatePlayers()
     {
-        for (int i = 0; i < numberOfPlayers; i++)
-        {
-            GameObject playerObject = Instantiate(playerPrefab, this.transform); // GameManager의 자식으로 생성
-            Player player = playerObject.GetComponent<Player>();
-            player.playerName = "Player " + (i + 1);
-            players.Add(player);
-            Debug.Log(player.playerName + " created as child of GameManager.");
-        }
+        // 이 메소드는 더 이상 직접 플레이어를 생성하지 않습니다.
+        // NetworkManager가 플레이어 프리팹을 스폰하고, HandleClientConnected에서 players 리스트에 추가합니다.
     }
 
     void DealCardsToPlayers(int cardsPerPlayer)
     {
-        for (int i = 0; i < cardsPerPlayer; i++)
+        // 서버에서만 카드 분배 로직 실행
+        if (!IsServer) return;
+
+        // 모든 플레이어에게 카드 분배
+        foreach (Player player in players)
         {
-            foreach (Player player in players)
+            for (int i = 0; i < cardsPerPlayer; i++)
             {
                 if (deck.Count > 0)
                 {
                     Card cardToDeal = deck[0];
                     deck.RemoveAt(0);
                     player.AddCardToHand(cardToDeal);
-                    cardToDeal.owner = player; // 카드의 소유자 설정
-                    // 카드 오브젝트의 부모를 플레이어 오브젝트로 설정
-                    cardToDeal.transform.SetParent(player.transform);
-                    Debug.Log($"Card {cardToDeal.name} parented to {player.name}");
+                    cardToDeal.ownerClientId.Value = player.OwnerClientId; // 카드의 소유자 ClientId 설정
+                    cardToDeal.NetworkObject.TrySetParent(player.NetworkObject);
                 }
                 else
                 {
@@ -135,20 +183,10 @@ public class GameManager : MonoBehaviour
                 }
             }
         }
-        // 모든 플레이어의 핸드 디스플레이 업데이트
-        foreach (Player player in players)
-        {
-            HandDisplay handDisplay = player.GetComponent<HandDisplay>();
-            if (handDisplay != null)
-            {
-                handDisplay.DisplayHand(player.hand);
-            }
-        }
     }
 
     void FillFieldDeck()
     {
-        Debug.Log($"[FillFieldDeck] Initial Deck Count: {deck.Count}, Discard Pile Count: {discardPile.Count}");
         for (int i = 0; i < fieldDeckSize; i++)
         {
             if (deck.Count == 0) // 덱에 카드가 없으면 discardPile을 셔플하여 덱으로 가져옴
@@ -162,16 +200,15 @@ public class GameManager : MonoBehaviour
                     }
                     discardPile.Clear();
                     ShuffleDeck(); // 덱을 다시 셔플
-                    Debug.Log($"[FillFieldDeck] After reshuffle: Deck Count: {deck.Count}, Discard Pile Count: {discardPile.Count}");
                 }
                 else
                 {
-                    Debug.LogWarning("No cards in deck or discard pile to fill the field deck.");
+                    Debug.LogWarning("Not enough cards in the deck or discard pile to fill the field deck.");
                     break; // 덱과 discardPile 모두 비어있으면 종료
                 }
             }
 
-            if (deck.Count > 0) // Check again after potential reshuffle
+            if (deck.Count > 0)
             {
                 Card cardToField = deck[0];
                 deck.RemoveAt(0);
@@ -179,7 +216,7 @@ public class GameManager : MonoBehaviour
             }
             else
             {
-                Debug.LogWarning("Not enough cards in the deck to fill the field deck after reshuffle.");
+                Debug.LogWarning("Not enough cards in the deck to fill the field deck.");
                 break;
             }
         }
@@ -210,10 +247,10 @@ public class GameManager : MonoBehaviour
         }
 
         // 이 카드가 현재 플레이어의 핸드에 있는지 확인
-        if (currentPlayer.hand.Contains(card))
+        if (currentPlayer.handNetworkIds.Contains(card.NetworkObjectId))
         {
             // 현재 턴 플레이어의 카드인지 확인
-            if (card.owner != currentPlayer)
+            if (card.ownerClientId.Value != currentPlayer.OwnerClientId)
             {
                 Debug.LogWarning("Cannot select another player's card.");
                 return;
@@ -268,7 +305,15 @@ public class GameManager : MonoBehaviour
     {
         Player currentPlayer = players[currentPlayerIndex];
 
-        int playerCardIndex = currentPlayer.hand.IndexOf(selectedCardFromHand);
+        int playerCardIndex = -1;
+        for(int i = 0; i < currentPlayer.handNetworkIds.Count; i++)
+        {
+            if(NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(currentPlayer.handNetworkIds[i], out NetworkObject networkObject) && networkObject.GetComponent<Card>() == selectedCardFromHand)
+            {
+                playerCardIndex = i;
+                break;
+            }
+        }
         int fieldCardIndex = fieldDeck.IndexOf(selectedCardFromField);
 
         if (playerCardIndex == -1 || fieldCardIndex == -1)
@@ -285,7 +330,8 @@ public class GameManager : MonoBehaviour
         Card tempPlayerCard = selectedCardFromHand;
         Card tempFieldCard = selectedCardFromField;
 
-        currentPlayer.hand[playerCardIndex] = tempFieldCard;
+        // NetworkList의 요소를 변경할 때는 인덱서를 사용합니다.
+        currentPlayer.handNetworkIds[playerCardIndex] = tempFieldCard.NetworkObjectId;
         fieldDeck[fieldCardIndex] = tempPlayerCard;
 
         // 애니메이션 시작
@@ -330,11 +376,11 @@ public class GameManager : MonoBehaviour
         fieldCard.transform.position = fieldCardTargetPos;
 
         // 카드의 소유자 업데이트 (데이터는 이미 SwapSelectedCards에서 업데이트됨)
-        playerCard.owner = players[currentPlayerIndex]; // 필드에서 핸드로 온 카드
-        fieldCard.owner = null; // 핸드에서 필드로 간 카드
+        playerCard.ownerClientId.Value = players[currentPlayerIndex].OwnerClientId; // 필드에서 핸드로 온 카드
+        fieldCard.ownerClientId.Value = 0; // 핸드에서 필드로 간 카드 (소유자 없음)
 
         // 디스플레이 업데이트 (부모 재설정 및 재정렬)
-        players[currentPlayerIndex].GetComponent<HandDisplay>().DisplayHand(players[currentPlayerIndex].hand);
+        players[currentPlayerIndex].GetComponent<HandDisplay>().DisplayHand(GetPlayerHandCards(players[currentPlayerIndex]));
         fieldDeckDisplay.DisplayFieldDeck(fieldDeck);
 
         AdvanceTurn(); // 턴 넘기기
@@ -347,9 +393,19 @@ public class GameManager : MonoBehaviour
         // 지금은 남겨두겠습니다.
         Player currentPlayer = players[currentPlayerIndex];
 
-        if (playerCardIndex < 0 || playerCardIndex >= currentPlayer.hand.Count)
+        // NetworkList의 인덱스를 직접 사용하는 대신, NetworkObjectId를 통해 카드를 찾습니다.
+        Card playerCard = null;
+        if (playerCardIndex >= 0 && playerCardIndex < currentPlayer.handNetworkIds.Count)
         {
-            Debug.LogError("Invalid player card index.");
+            if (NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(currentPlayer.handNetworkIds[playerCardIndex], out NetworkObject networkObject))
+            {
+                playerCard = networkObject.GetComponent<Card>();
+            }
+        }
+
+        if (playerCard == null)
+        {
+            Debug.LogError("Invalid player card index or card not found.");
             return;
         }
 
@@ -359,10 +415,10 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        Card playerCard = currentPlayer.hand[playerCardIndex];
         Card fieldCard = fieldDeck[fieldCardIndex];
 
-        currentPlayer.hand[playerCardIndex] = fieldCard;
+        // 데이터 교환
+        currentPlayer.handNetworkIds[playerCardIndex] = fieldCard.NetworkObjectId;
         fieldDeck[fieldCardIndex] = playerCard;
 
         Debug.Log(currentPlayer.playerName + " swapped " + playerCard.name + " with " + fieldCard.name + " from field deck.");
@@ -371,7 +427,9 @@ public class GameManager : MonoBehaviour
         HandDisplay handDisplay = currentPlayer.GetComponent<HandDisplay>();
         if (handDisplay != null)
         {
-            handDisplay.DisplayHand(currentPlayer.hand);
+            // HandDisplay는 NetworkList를 직접 처리하도록 이미 수정되었으므로, player.hand 대신 player.handNetworkIds를 전달합니다.
+            // 하지만 HandDisplay.DisplayHand는 List<Card>를 받으므로, NetworkList에서 Card 객체를 추출해야 합니다.
+            handDisplay.DisplayHand(GetPlayerHandCards(currentPlayer));
         }
 
         // 필드 덱 디스플레이 업데이트
@@ -413,8 +471,22 @@ public class GameManager : MonoBehaviour
         Debug.Log("\n--- Determining Winner ---");
         foreach (Player player in players)
         {
+            // NetworkList<ulong>에서 실제 Card 객체 리스트를 생성
+            List<Card> playerActualHand = new List<Card>();
+            foreach (ulong cardId in player.handNetworkIds)
+            {
+                if (NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(cardId, out NetworkObject networkObject))
+                {
+                    Card card = networkObject.GetComponent<Card>();
+                    if (card != null)
+                    {
+                        playerActualHand.Add(card);
+                    }
+                }
+            }
+
             Player.HandEvaluationResult currentHand = player.EvaluateHand();
-            Debug.Log($"{player.playerName}'s hand: {string.Join(", ", player.hand.Select(c => c.cardSuit + " " + c.cardRank))} (Rank: {currentHand.Rank})");
+            Debug.Log($"{player.playerName}'s hand: {string.Join(", ", playerActualHand.Select(c => c.cardSuit + " " + c.cardRank))} (Rank: {currentHand.Rank})");
 
             if (winner == null || currentHand.Rank > bestHand.Rank)
             {
@@ -462,7 +534,7 @@ public class GameManager : MonoBehaviour
 
     void Update()
     {
-        // 게임 상태에 따라 다른 로직을 처리할 수 있습니다.
+        // 게임 상태에 따라 다른 로직을 처리할 수 있습니다。
         switch (currentState)
         {
             case GameState.Setup:
@@ -475,5 +547,23 @@ public class GameManager : MonoBehaviour
                 // 게임 종료 로직
                 break;
         }
+    }
+
+    // 헬퍼 메소드: Player의 handNetworkIds에서 실제 Card 객체 리스트를 가져옵니다.
+    private List<Card> GetPlayerHandCards(Player player)
+    {
+        List<Card> handCards = new List<Card>();
+        foreach (ulong cardId in player.handNetworkIds)
+        {
+            if (NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(cardId, out NetworkObject networkObject))
+            {
+                Card card = networkObject.GetComponent<Card>();
+                if (card != null)
+                {
+                    handCards.Add(card);
+                }
+            }
+        }
+        return handCards;
     }
 }

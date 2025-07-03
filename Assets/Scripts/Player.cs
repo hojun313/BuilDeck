@@ -1,11 +1,59 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
+using Unity.Netcode; // NetworkBehaviour를 위해 추가
 
-public class Player : MonoBehaviour
+public class Player : NetworkBehaviour
 {
-    public List<Card> hand = new List<Card>();
+    public NetworkList<ulong> handNetworkIds; // 카드의 NetworkObjectId를 저장
     public string playerName;
+
+    void Awake()
+    {
+        handNetworkIds = new NetworkList<ulong>();
+    }
+
+    public override void OnNetworkSpawn()
+    {
+        if (IsOwner)
+        {
+            // 클라이언트 측에서 자신의 핸드 디스플레이를 업데이트하기 위해 구독
+            handNetworkIds.OnListChanged += OnHandNetworkIdsChanged;
+        }
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        if (IsOwner)
+        {
+            handNetworkIds.OnListChanged -= OnHandNetworkIdsChanged;
+        }
+    }
+
+    private void OnHandNetworkIdsChanged(NetworkListEvent<ulong> changeEvent)
+    {
+        // 핸드 리스트가 변경될 때마다 UI 업데이트
+        if (IsOwner)
+        {
+            HandDisplay handDisplay = GetComponent<HandDisplay>();
+            if (handDisplay != null)
+            {
+                List<Card> currentHandCards = new List<Card>();
+                foreach (ulong cardId in handNetworkIds)
+                {
+                    if (NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(cardId, out NetworkObject networkObject))
+                    {
+                        Card card = networkObject.GetComponent<Card>();
+                        if (card != null)
+                        {
+                            currentHandCards.Add(card);
+                        }
+                    }
+                }
+                handDisplay.DisplayHand(currentHandCards);
+            }
+        }
+    }
 
     public enum PokerHandRank
     {
@@ -23,13 +71,15 @@ public class Player : MonoBehaviour
 
     public void AddCardToHand(Card card)
     {
-        hand.Add(card);
+        if (!IsServer) return; // 서버에서만 호출되도록
+        handNetworkIds.Add(card.NetworkObjectId);
         Debug.Log(playerName + " received " + card.cardSuit + " " + card.cardRank);
     }
 
     public void ClearHand()
     {
-        hand.Clear();
+        if (!IsServer) return; // 서버에서만 호출되도록
+        handNetworkIds.Clear();
         Debug.Log(playerName + "'s hand cleared.");
     }
 
@@ -41,15 +91,29 @@ public class Player : MonoBehaviour
 
     public HandEvaluationResult EvaluateHand()
     {
-        if (hand.Count != 5)
+        // NetworkList에서 실제 Card 객체를 가져와서 평가
+        List<Card> currentHandCards = new List<Card>();
+        foreach (ulong cardId in handNetworkIds)
+        {
+            if (NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(cardId, out NetworkObject networkObject))
+            {
+                Card card = networkObject.GetComponent<Card>();
+                if (card != null)
+                {
+                    currentHandCards.Add(card);
+                }
+            }
+        }
+
+        if (currentHandCards.Count != 5)
         {
             Debug.LogWarning("Hand must contain 5 cards for poker evaluation.");
             return new HandEvaluationResult { Rank = PokerHandRank.HighCard };
         }
 
         // Sort ranks descending, Ace is 1 by default.
-        List<int> ranks = hand.Select(card => (int)card.cardRank).OrderByDescending(r => r).ToList();
-        List<Card.Suit> suits = hand.Select(card => card.cardSuit).ToList();
+        List<int> ranks = currentHandCards.Select(card => (int)card.cardRank).OrderByDescending(r => r).ToList();
+        List<Card.Suit> suits = currentHandCards.Select(card => card.cardSuit).ToList();
 
         bool isFlush = suits.Distinct().Count() == 1;
         bool isStraight = IsStraight(ranks);

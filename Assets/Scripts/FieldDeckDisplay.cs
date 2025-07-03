@@ -1,8 +1,9 @@
 
 using System.Collections.Generic;
 using UnityEngine;
+using Unity.Netcode;
 
-public class FieldDeckDisplay : MonoBehaviour
+public class FieldDeckDisplay : NetworkBehaviour
 {
     public float cardSpacing = 1.5f; // 카드 간격
     public Vector3 startPosition = Vector3.zero; // 필드 덱 시작 위치
@@ -23,7 +24,7 @@ public class FieldDeckDisplay : MonoBehaviour
             {
                 card.gameObject.SetActive(true); // 카드 활성화
                 // 카드의 부모를 FieldDeckDisplay 오브젝트로 설정
-                card.transform.SetParent(this.transform);
+                card.NetworkObject.TrySetParent(this.NetworkObject);
 
                 // 카드 위치 설정
                 Vector3 newPosition = startPosition + new Vector3(i * cardSpacing, 0, 0);
