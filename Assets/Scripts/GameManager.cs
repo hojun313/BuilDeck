@@ -1,4 +1,3 @@
-
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
@@ -24,7 +23,7 @@ public class GameManager : NetworkBehaviour
     public Card selectedCardFromHand = null;
     public Card selectedCardFromField = null;
     public List<Card> deck = new List<Card>();
-    public List<Card> fieldDeck = new List<Card>();
+    
     public List<Card> discardPile = new List<Card>(); // 새로 추가된 죽은 카드 더미
     public int fieldDeckSize = 5; // 필드 덱의 카드 수
     public FieldDeckDisplay fieldDeckDisplay; // 필드 덱 디스플레이 참조
@@ -212,7 +211,11 @@ public class GameManager : NetworkBehaviour
             {
                 Card cardToField = deck[0];
                 deck.RemoveAt(0);
-                fieldDeck.Add(cardToField);
+                // fieldDeck.Add(cardToField); // 기존 fieldDeck 대신 NetworkList에 NetworkObjectId 추가
+                if (fieldDeckDisplay != null)
+                {
+                    fieldDeckDisplay.fieldDeckCardIds.Add(cardToField.NetworkObjectId);
+                }
             }
             else
             {
@@ -220,10 +223,10 @@ public class GameManager : NetworkBehaviour
                 break;
             }
         }
-        Debug.Log("Field deck filled with " + fieldDeck.Count + " cards.");
+        Debug.Log("Field deck filled with " + fieldDeckDisplay.fieldDeckCardIds.Count + " cards.");
         if (fieldDeckDisplay != null)
         {
-            fieldDeckDisplay.DisplayFieldDeck(fieldDeck);
+            fieldDeckDisplay.DisplayFieldDeck(); // 매개변수 없이 호출
         }
         Debug.Log("Current turn: " + players[currentPlayerIndex].playerName);
     }
@@ -274,7 +277,7 @@ public class GameManager : NetworkBehaviour
             }
         }
         // 이 카드가 필드 덱에 있는지 확인 (필드 덱 카드는 항상 선택 가능)
-        else if (fieldDeck.Contains(card))
+        else if (fieldDeckDisplay.fieldDeckCardIds.Contains(card.NetworkObjectId))
         {
             if (selectedCardFromField == card) // 이미 선택된 필드 카드를 다시 클릭한 경우
             {
@@ -314,7 +317,15 @@ public class GameManager : NetworkBehaviour
                 break;
             }
         }
-        int fieldCardIndex = fieldDeck.IndexOf(selectedCardFromField);
+        int fieldCardIndex = -1;
+        for(int i = 0; i < fieldDeckDisplay.fieldDeckCardIds.Count; i++)
+        {
+            if(NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(fieldDeckDisplay.fieldDeckCardIds[i], out NetworkObject networkObject) && networkObject.GetComponent<Card>() == selectedCardFromField)
+            {
+                fieldCardIndex = i;
+                break;
+            }
+        }
 
         if (playerCardIndex == -1 || fieldCardIndex == -1)
         {
@@ -332,7 +343,7 @@ public class GameManager : NetworkBehaviour
 
         // NetworkList의 요소를 변경할 때는 인덱서를 사용합니다.
         currentPlayer.handNetworkIds[playerCardIndex] = tempFieldCard.NetworkObjectId;
-        fieldDeck[fieldCardIndex] = tempPlayerCard;
+        fieldDeckDisplay.fieldDeckCardIds[fieldCardIndex] = tempPlayerCard.NetworkObjectId;
 
         // 애니메이션 시작
         StartCoroutine(AnimateCardSwap(tempPlayerCard, tempFieldCard, currentPlayer.transform, fieldDeckDisplay.transform, playerCardIndex, fieldCardIndex));
@@ -381,7 +392,7 @@ public class GameManager : NetworkBehaviour
 
         // 디스플레이 업데이트 (부모 재설정 및 재정렬)
         players[currentPlayerIndex].GetComponent<HandDisplay>().DisplayHand(GetPlayerHandCards(players[currentPlayerIndex]));
-        fieldDeckDisplay.DisplayFieldDeck(fieldDeck);
+        fieldDeckDisplay.DisplayFieldDeck();
 
         AdvanceTurn(); // 턴 넘기기
     }
@@ -409,17 +420,17 @@ public class GameManager : NetworkBehaviour
             return;
         }
 
-        if (fieldCardIndex < 0 || fieldCardIndex >= fieldDeck.Count)
+        if (fieldCardIndex < 0 || fieldCardIndex >= fieldDeckDisplay.fieldDeckCardIds.Count)
         {
             Debug.LogError("Invalid field card index.");
             return;
         }
 
-        Card fieldCard = fieldDeck[fieldCardIndex];
+        Card fieldCard = NetworkManager.Singleton.SpawnManager.SpawnedObjects[fieldDeckDisplay.fieldDeckCardIds[fieldCardIndex]].GetComponent<Card>();
 
         // 데이터 교환
         currentPlayer.handNetworkIds[playerCardIndex] = fieldCard.NetworkObjectId;
-        fieldDeck[fieldCardIndex] = playerCard;
+        fieldDeckDisplay.fieldDeckCardIds[fieldCardIndex] = playerCard.NetworkObjectId;
 
         Debug.Log(currentPlayer.playerName + " swapped " + playerCard.name + " with " + fieldCard.name + " from field deck.");
 
@@ -435,7 +446,7 @@ public class GameManager : NetworkBehaviour
         // 필드 덱 디스플레이 업데이트
         if (fieldDeckDisplay != null)
         {
-            fieldDeckDisplay.DisplayFieldDeck(fieldDeck);
+            fieldDeckDisplay.DisplayFieldDeck();
         }
 
         AdvanceTurn();
@@ -445,11 +456,11 @@ public class GameManager : NetworkBehaviour
     {
         Debug.Log("Trashing current field deck and refilling.");
         // 현재 필드 덱의 카드들을 discardPile로 이동
-        foreach (Card card in fieldDeck)
+        foreach (ulong cardId in fieldDeckDisplay.fieldDeckCardIds)
         {
-            discardPile.Add(card); // discardPile에 추가
+            discardPile.Add(NetworkManager.Singleton.SpawnManager.SpawnedObjects[cardId].GetComponent<Card>()); // discardPile에 추가
         }
-        fieldDeck.Clear(); // 필드 덱 비우기
+        fieldDeckDisplay.fieldDeckCardIds.Clear(); // 필드 덱 비우기
 
         FillFieldDeck(); // 새로운 카드로 필드 덱 채우기
         Debug.Log("Field deck refilled. Now player can choose to swap a card.");
@@ -534,7 +545,7 @@ public class GameManager : NetworkBehaviour
 
     void Update()
     {
-        // 게임 상태에 따라 다른 로직을 처리할 수 있습니다。
+        // 게임 상태에 따라 다른 로직을 처리할 수 있습니다.
         switch (currentState)
         {
             case GameState.Setup:
