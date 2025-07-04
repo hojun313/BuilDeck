@@ -46,16 +46,4 @@ public class Card : NetworkBehaviour
             cardDisplay.SetSelected(newValue);
         }
     }
-
-    void OnMouseDown()
-    {
-        // 서버이거나, 클라이언트이면서 자신의 소유인 경우에만 클릭 처리
-        if (IsServer || (IsClient && IsOwner))
-        {
-            if (gameManager != null)
-            {
-                gameManager.HandleCardSelection(this);
-            }
-        }
-    }
 }
