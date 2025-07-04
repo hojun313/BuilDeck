@@ -88,6 +88,12 @@ public class CardDisplay : MonoBehaviour
         }
     }
 
+    public void ResetSelectionState()
+    {
+        // 카드가 선택된 적이 없던 상태로 되돌려, 다음 선택 시 위치를 새로 저장하도록 합니다.
+        _wasSelected = false;
+    }
+
     void OnMouseDown()
     {
         if (FindObjectOfType<GameManager>() == null || !Unity.Netcode.NetworkManager.Singleton.IsClient) return;
