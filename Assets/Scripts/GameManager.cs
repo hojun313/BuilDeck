@@ -257,7 +257,7 @@ public class GameManager : NetworkBehaviour
         {
             if (selectedCardFromHand == card) // 이미 선택된 핸드 카드를 다시 클릭한 경우
             {
-                selectedCardFromHand.GetComponent<CardDisplay>().SetSelected(false);
+                selectedCardFromHand.isSelected.Value = false;
                 selectedCardFromHand = null;
                 Debug.Log("Deselected from hand: " + card.name);
             }
@@ -265,10 +265,10 @@ public class GameManager : NetworkBehaviour
             {
                 if (selectedCardFromHand != null)
                 {
-                    selectedCardFromHand.GetComponent<CardDisplay>().SetSelected(false);
+                    selectedCardFromHand.isSelected.Value = false;
                 }
                 selectedCardFromHand = card;
-                selectedCardFromHand.GetComponent<CardDisplay>().SetSelected(true);
+                selectedCardFromHand.isSelected.Value = true;
                 Debug.Log("Selected from hand: " + card.name);
             }
         }
@@ -277,7 +277,7 @@ public class GameManager : NetworkBehaviour
         {
             if (selectedCardFromField == card) // 이미 선택된 필드 카드를 다시 클릭한 경우
             {
-                selectedCardFromField.GetComponent<CardDisplay>().SetSelected(false);
+                selectedCardFromField.isSelected.Value = false;
                 selectedCardFromField = null;
                 Debug.Log("Deselected from field: " + card.name);
             }
@@ -285,10 +285,10 @@ public class GameManager : NetworkBehaviour
             {
                 if (selectedCardFromField != null)
                 {
-                    selectedCardFromField.GetComponent<CardDisplay>().SetSelected(false);
+                    selectedCardFromField.isSelected.Value = false;
                 }
                 selectedCardFromField = card;
-                selectedCardFromField.GetComponent<CardDisplay>().SetSelected(true);
+                selectedCardFromField.isSelected.Value = true;
                 Debug.Log("Selected from field: " + card.name);
             }
         }
@@ -367,8 +367,8 @@ public class GameManager : NetworkBehaviour
         }
 
         // 선택 효과 해제
-        selectedCardFromHand.GetComponent<CardDisplay>().SetSelected(false);
-        selectedCardFromField.GetComponent<CardDisplay>().SetSelected(false);
+        selectedCardFromHand.isSelected.Value = false;
+        selectedCardFromField.isSelected.Value = false;
 
         // 카드 교환 (데이터)
         Card tempPlayerCard = selectedCardFromHand;
