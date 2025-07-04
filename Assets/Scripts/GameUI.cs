@@ -69,13 +69,13 @@ public class GameUI : MonoBehaviour
     void OnTrashAndRefillButtonClicked()
     {
         Debug.Log("Trash and Refill Button Clicked!");
-        gameManager.TrashAndRefillFieldDeck();
+        gameManager.RequestTrashAndRefillServerRpc();
     }
 
     void OnDeclareStopButtonClicked()
     {
         Debug.Log("Declare Stop Button Clicked!");
-        gameManager.DeclareStop();
+        gameManager.RequestDeclareStopServerRpc();
     }
 
     private IEnumerator AnimateButtonPress(Button button)

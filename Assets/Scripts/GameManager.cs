@@ -504,12 +504,34 @@ public class GameManager : NetworkBehaviour
         Debug.Log("Field deck refilled. Now player can choose to swap a card.");
     }
 
+    [ServerRpc(RequireOwnership = false)]
+    public void RequestTrashAndRefillServerRpc(ServerRpcParams rpcParams = default)
+    {
+        if (players[currentPlayerIndex].OwnerClientId != rpcParams.Receive.SenderClientId)
+        {
+            Debug.LogWarning("A non-turn player tried to trash and refill the field deck.");
+            return;
+        }
+        TrashAndRefillFieldDeck();
+    }
+
     public void DeclareStop()
     {
         currentState = GameState.GameOver;
         Debug.Log(players[currentPlayerIndex].playerName + " declared stop! Game is over. Proceeding to result checking.");
         if (gameUI != null) gameUI.UpdateButtonStates(currentState, null); // currentPlayer를 null로 전달
         DetermineWinner();
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    public void RequestDeclareStopServerRpc(ServerRpcParams rpcParams = default)
+    {
+        if (players[currentPlayerIndex].OwnerClientId != rpcParams.Receive.SenderClientId)
+        {
+            Debug.LogWarning("A non-turn player tried to declare stop.");
+            return;
+        }
+        DeclareStop();
     }
 
     void DetermineWinner()
