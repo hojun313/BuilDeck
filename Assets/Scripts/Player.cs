@@ -3,6 +3,8 @@ using UnityEngine;
 using System.Linq;
 using Unity.Netcode; // NetworkBehaviour를 위해 추가
 
+using System.Collections;
+
 public class Player : NetworkBehaviour
 {
     public NetworkList<ulong> handNetworkIds; // 카드의 NetworkObjectId를 저장
@@ -19,6 +21,8 @@ public class Player : NetworkBehaviour
         {
             // 클라이언트 측에서 자신의 핸드 디스플레이를 업데이트하기 위해 구독
             handNetworkIds.OnListChanged += OnHandNetworkIdsChanged;
+            // 초기 핸드 표시
+            StartCoroutine(UpdateHandDisplayNextFrame());
         }
     }
 
@@ -32,26 +36,34 @@ public class Player : NetworkBehaviour
 
     private void OnHandNetworkIdsChanged(NetworkListEvent<ulong> changeEvent)
     {
-        // 핸드 리스트가 변경될 때마다 UI 업데이트
+        // 핸드 리스트가 변경될 때마다 UI 업데이트 (다음 프레임에)
         if (IsOwner)
         {
-            HandDisplay handDisplay = GetComponent<HandDisplay>();
-            if (handDisplay != null)
+            StartCoroutine(UpdateHandDisplayNextFrame());
+        }
+    }
+
+    private IEnumerator UpdateHandDisplayNextFrame()
+    {
+        // 다음 프레임까지 기다립니다.
+        yield return null;
+
+        HandDisplay handDisplay = GetComponent<HandDisplay>();
+        if (handDisplay != null)
+        {
+            List<Card> currentHandCards = new List<Card>();
+            foreach (ulong cardId in handNetworkIds)
             {
-                List<Card> currentHandCards = new List<Card>();
-                foreach (ulong cardId in handNetworkIds)
+                if (NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(cardId, out NetworkObject networkObject))
                 {
-                    if (NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(cardId, out NetworkObject networkObject))
+                    Card card = networkObject.GetComponent<Card>();
+                    if (card != null)
                     {
-                        Card card = networkObject.GetComponent<Card>();
-                        if (card != null)
-                        {
-                            currentHandCards.Add(card);
-                        }
+                        currentHandCards.Add(card);
                     }
                 }
-                handDisplay.DisplayHand(currentHandCards);
             }
+            handDisplay.DisplayHand(currentHandCards);
         }
     }
 

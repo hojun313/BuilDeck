@@ -385,8 +385,6 @@ public class GameManager : NetworkBehaviour
         playerCard.ownerClientId.Value = 0; // 핸드에서 필드로 간 카드 (소유자 없음)
         fieldCard.ownerClientId.Value = currentPlayer.OwnerClientId; // 필드에서 핸드로 온 카드
 
-        UpdateAllDisplaysClientRpc();
-
         Debug.Log($"{currentPlayer.playerName} swapped {playerCard.name} with {fieldCard.name}");
 
         // 선택 변수 초기화
