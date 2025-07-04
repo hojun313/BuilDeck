@@ -24,6 +24,9 @@ public class GameManager : NetworkBehaviour
     public Card selectedCardFromField = null;
     public List<Card> deck = new List<Card>();
     
+    public NetworkVariable<int> deckCount = new NetworkVariable<int>();
+    public NetworkVariable<int> discardPileCount = new NetworkVariable<int>();
+
     public List<Card> discardPile = new List<Card>(); // 새로 추가된 죽은 카드 더미
     public int fieldDeckSize = 5; // 필드 덱의 카드 수
     public FieldDeckDisplay fieldDeckDisplay; // 필드 덱 디스플레이 참조
@@ -65,6 +68,8 @@ public class GameManager : NetworkBehaviour
                 player.playerName = "Player " + (players.Count + 1);
                 players.Add(player);
                 Debug.Log(player.playerName + " connected.");
+
+                // OpponentHandDisplay 설정은 이제 SetupOpponentDisplaysClientRpc에서 처리됩니다.
             }
         }
 
@@ -72,6 +77,51 @@ public class GameManager : NetworkBehaviour
         if (players.Count == numberOfPlayers)
         {
             StartGame();
+        }
+
+        // 모든 클라이언트가 연결된 후, 각 클라이언트에게 상대방 핸드 디스플레이를 설정하도록 RPC 호출
+        if (IsServer && players.Count == numberOfPlayers)
+        {
+            SetupOpponentDisplaysClientRpc();
+        }
+    }
+
+    [ClientRpc]
+    void SetupOpponentDisplaysClientRpc()
+    {
+        // 로컬 클라이언트의 Player 객체를 찾습니다.
+        Player localPlayer = null;
+        foreach (var p in players)
+        {
+            if (p.IsOwner)
+            {
+                localPlayer = p;
+                break;
+            }
+        }
+
+        if (localPlayer == null)
+        {
+            Debug.LogError("Local player not found for setting up opponent displays.");
+            return;
+        }
+
+        // 씬에 있는 OpponentHandDisplay 인스턴스를 찾습니다.
+        OpponentHandDisplay opponentHandDisplay = FindObjectOfType<OpponentHandDisplay>();
+        if (opponentHandDisplay == null)
+        {
+            Debug.LogError("OpponentHandDisplay not found in the scene.");
+            return;
+        }
+
+        // 상대방 플레이어를 찾아 OpponentHandDisplay에 연결합니다.
+        foreach (var p in players)
+        {
+            if (p != localPlayer) // 자신이 아닌 다른 플레이어
+            {
+                opponentHandDisplay.SetTargetPlayer(p);
+                break; // 현재는 2인 플레이를 가정하므로 첫 번째 상대방만 설정
+            }
         }
     }
 
@@ -125,16 +175,9 @@ public class GameManager : NetworkBehaviour
                 }
 
                 deck.Add(newCard); // 서버의 로컬 덱 리스트에 추가
-
-                // CardDisplay 컴포넌트 설정은 Card.cs의 OnNetworkSpawn에서 처리하는 것이 더 견고합니다.
-                // CardDisplay cardDisplay = newCardObject.GetComponent<CardDisplay>();
-                // if (cardDisplay != null)
-                // {
-                //     cardDisplay.SetCard(newCard);
-                // }
             }
         }
-
+        deckCount.Value = deck.Count; // 덱 카운트 업데이트
         Debug.Log("Deck created and spawned with " + deck.Count + " cards.");
     }
 
@@ -182,6 +225,7 @@ public class GameManager : NetworkBehaviour
                 }
             }
         }
+        deckCount.Value = deck.Count; // 덱 카운트 업데이트
     }
 
     void FillFieldDeck()
@@ -199,6 +243,7 @@ public class GameManager : NetworkBehaviour
                     }
                     discardPile.Clear();
                     ShuffleDeck(); // 덱을 다시 셔플
+                    discardPileCount.Value = discardPile.Count; // 죽은 카드 더미 카운트 업데이트
                 }
                 else
                 {
@@ -223,6 +268,7 @@ public class GameManager : NetworkBehaviour
                 break;
             }
         }
+        deckCount.Value = deck.Count; // 덱 카운트 업데이트
         Debug.Log("Field deck filled with " + fieldDeckDisplay.fieldDeckCardIds.Count + " cards.");
         if (fieldDeckDisplay != null)
         {
@@ -501,6 +547,7 @@ public class GameManager : NetworkBehaviour
         {
             discardPile.Add(NetworkManager.Singleton.SpawnManager.SpawnedObjects[cardId].GetComponent<Card>()); // discardPile에 추가
         }
+        discardPileCount.Value = discardPile.Count; // 죽은 카드 더미 카운트 업데이트
         fieldDeckDisplay.fieldDeckCardIds.Clear(); // 필드 덱 비우기
 
         FillFieldDeck(); // 새로운 카드로 필드 덱 채우기

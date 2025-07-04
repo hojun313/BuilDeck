@@ -10,6 +10,7 @@ public class Player : NetworkBehaviour
     public NetworkList<ulong> handNetworkIds; // 카드의 NetworkObjectId를 저장
     public string playerName;
     public NetworkVariable<bool> hasUsedTrashAndRefill = new NetworkVariable<bool>(false); // 현재 턴에 필드 덱 리필을 사용했는지 여부
+    public NetworkVariable<int> handCardCount = new NetworkVariable<int>(0); // 핸드에 있는 카드 개수
 
     void Awake()
     {
@@ -97,6 +98,7 @@ public class Player : NetworkBehaviour
     {
         if (!IsServer) return; // 서버에서만 호출되도록
         handNetworkIds.Add(card.NetworkObjectId);
+        handCardCount.Value = handNetworkIds.Count; // 핸드 카드 개수 업데이트
         Debug.Log(playerName + " received " + card.cardSuit + " " + card.cardRank);
     }
 
@@ -104,6 +106,7 @@ public class Player : NetworkBehaviour
     {
         if (!IsServer) return; // 서버에서만 호출되도록
         handNetworkIds.Clear();
+        handCardCount.Value = handNetworkIds.Count; // 핸드 카드 개수 업데이트
         Debug.Log(playerName + "'s hand cleared.");
     }
 

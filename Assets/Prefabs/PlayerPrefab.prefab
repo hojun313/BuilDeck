@@ -9,9 +9,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6406924453828515539}
+  - component: {fileID: -5626522468353006093}
   - component: {fileID: 7856710362124934006}
   - component: {fileID: 744826957099263868}
-  - component: {fileID: -5626522468353006093}
   - component: {fileID: -4561003390830094260}
   m_Layer: 0
   m_Name: PlayerPrefab
@@ -36,37 +36,6 @@ Transform:
   - {fileID: 320072132499821032}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &7856710362124934006
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2536777036296045737}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bb2132b131392f14badd5c7888597f55, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  hand: []
-  playerName: 
---- !u!114 &744826957099263868
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2536777036296045737}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b0e3408e3086ce843a584ddda60d6bd3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  cardSpacing: 1.5
-  startPosition: {x: 0, y: 2, z: 0}
-  arcRadius: 4
-  maxArcAngle: 90
-  cardRotation: 10
 --- !u!114 &-5626522468353006093
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -92,6 +61,41 @@ MonoBehaviour:
   AutoObjectParentSync: 1
   SyncOwnerTransformWhenParented: 1
   AllowOwnerToParent: 0
+--- !u!114 &7856710362124934006
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2536777036296045737}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bb2132b131392f14badd5c7888597f55, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  playerName: 
+  hasUsedTrashAndRefill:
+    m_InternalValue: 0
+  handCardCount:
+    m_InternalValue: 0
+--- !u!114 &744826957099263868
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2536777036296045737}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b0e3408e3086ce843a584ddda60d6bd3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  cardSpacing: 1.5
+  startPosition: {x: 0, y: 2, z: 0}
+  arcRadius: 4
+  maxArcAngle: 90
+  cardRotation: 10
 --- !u!114 &-4561003390830094260
 MonoBehaviour:
   m_ObjectHideFlags: 0
