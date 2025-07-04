@@ -345,56 +345,63 @@ public class GameManager : NetworkBehaviour
         currentPlayer.handNetworkIds[playerCardIndex] = tempFieldCard.NetworkObjectId;
         fieldDeckDisplay.fieldDeckCardIds[fieldCardIndex] = tempPlayerCard.NetworkObjectId;
 
-        // 애니메이션 시작
-        StartCoroutine(AnimateCardSwap(tempPlayerCard, tempFieldCard, currentPlayer.transform, fieldDeckDisplay.transform, playerCardIndex, fieldCardIndex));
+        Card playerCard = selectedCardFromHand;
+        Card fieldCard = selectedCardFromField;
 
-        Debug.Log($"{currentPlayer.playerName} swapped {tempPlayerCard.name} with {tempFieldCard.name}");
+        // 데이터 동기화 후 즉시 디스플레이 업데이트
+        playerCard.ownerClientId.Value = 0; // 핸드에서 필드로 간 카드 (소유자 없음)
+        fieldCard.ownerClientId.Value = currentPlayer.OwnerClientId; // 필드에서 핸드로 온 카드
+
+        UpdateAllDisplaysClientRpc();
+
+        Debug.Log($"{currentPlayer.playerName} swapped {playerCard.name} with {fieldCard.name}");
 
         // 선택 변수 초기화
         selectedCardFromHand = null;
         selectedCardFromField = null;
 
-        // 턴 넘기기는 애니메이션 완료 후 진행
+        AdvanceTurn(); // 턴 넘기기
     }
 
     private IEnumerator AnimateCardSwap(Card playerCard, Card fieldCard, Transform playerHandParent, Transform fieldDeckParent, int playerCardOriginalIndex, int fieldCardOriginalIndex)
     {
-        // 애니메이션을 위해 잠시 부모를 GameManager로 변경
-        playerCard.transform.SetParent(this.transform);
-        fieldCard.transform.SetParent(this.transform);
+        // // 애니메이션을 위해 잠시 부모를 GameManager로 변경
+        // playerCard.transform.SetParent(this.transform);
+        // fieldCard.transform.SetParent(this.transform);
 
-        Vector3 playerCardStartPos = playerCard.transform.position;
-        Vector3 fieldCardStartPos = fieldCard.transform.position;
+        // Vector3 playerCardStartPos = playerCard.transform.position;
+        // Vector3 fieldCardStartPos = fieldCard.transform.position;
 
-        // 목표 위치는 애니메이션 완료 후 HandDisplay와 FieldDeckDisplay가 다시 설정할 것이므로, 여기서는 임시로 서로의 시작 위치를 목표로 설정합니다.
-        // 실제로는 HandDisplay와 FieldDeckDisplay의 DisplayHand/DisplayFieldDeck이 호출된 후 최종 위치가 결정됩니다.
-        Vector3 playerCardTargetPos = fieldCardStartPos; 
-        Vector3 fieldCardTargetPos = playerCardStartPos;
+        // // 목표 위치는 애니메이션 완료 후 HandDisplay와 FieldDeckDisplay가 다시 설정할 것이므로, 여기서는 임시로 서로의 시작 위치를 목표로 설정합니다.
+        // // 실제로는 HandDisplay와 FieldDeckDisplay의 DisplayHand/DisplayFieldDeck이 호출된 후 최종 위치가 결정됩니다.
+        // Vector3 playerCardTargetPos = fieldCardStartPos; 
+        // Vector3 fieldCardTargetPos = playerCardStartPos;
 
-        float timer = 0f;
-        while (timer < cardMoveDuration)
-        {
-            timer += Time.deltaTime;
-            float t = timer / cardMoveDuration;
+        // float timer = 0f;
+        // while (timer < cardMoveDuration)
+        // {
+        //     timer += Time.deltaTime;
+        //     float t = timer / cardMoveDuration;
 
-            playerCard.transform.position = Vector3.Lerp(playerCardStartPos, playerCardTargetPos, t);
-            fieldCard.transform.position = Vector3.Lerp(fieldCardStartPos, fieldCardTargetPos, t);
-            yield return null;
-        }
+        //     playerCard.transform.position = Vector3.Lerp(playerCardStartPos, playerCardTargetPos, t);
+        //     fieldCard.transform.position = Vector3.Lerp(fieldCardStartPos, fieldCardTargetPos, t);
+        //     yield return null;
+        // }
 
-        // 애니메이션 완료 후 최종 위치 설정 (정확한 위치는 DisplayHand/DisplayFieldDeck이 담당)
-        playerCard.transform.position = playerCardTargetPos;
-        fieldCard.transform.position = fieldCardTargetPos;
+        // // 애니메이션 완료 후 최종 위치 설정 (정확한 위치는 DisplayHand/DisplayFieldDeck이 담당)
+        // playerCard.transform.position = playerCardTargetPos;
+        // fieldCard.transform.position = fieldCardTargetPos;
 
         // 카드의 소유자 업데이트 (데이터는 이미 SwapSelectedCards에서 업데이트됨)
-        playerCard.ownerClientId.Value = players[currentPlayerIndex].OwnerClientId; // 필드에서 핸드로 온 카드
-        fieldCard.ownerClientId.Value = 0; // 핸드에서 필드로 간 카드 (소유자 없음)
+        // playerCard.ownerClientId.Value = 0; // 핸드에서 필드로 간 카드 (소유자 없음)
+        // fieldCard.ownerClientId.Value = players[currentPlayerIndex].OwnerClientId; // 필드에서 핸드로 온 카드
 
         // 디스플레이 업데이트 (부모 재설정 및 재정렬)
-        players[currentPlayerIndex].GetComponent<HandDisplay>().DisplayHand(GetPlayerHandCards(players[currentPlayerIndex]));
-        fieldDeckDisplay.DisplayFieldDeck();
+        // UpdateHandDisplayClientRpc(players[currentPlayerIndex].OwnerClientId);
+        // UpdateFieldDeckClientRpc();
 
         AdvanceTurn(); // 턴 넘기기
+        yield return null; // 코루틴이므로 yield return null이 필요합니다.
     }
 
     public void SwapCardWithFieldDeck(int playerCardIndex, int fieldCardIndex)
@@ -576,5 +583,19 @@ public class GameManager : NetworkBehaviour
             }
         }
         return handCards;
+    }
+
+    [ClientRpc]
+    void UpdateAllDisplaysClientRpc()
+    {
+        foreach (Player player in players)
+        {
+            // 클라이언트 자신에게 속한 핸드만 업데이트하도록 확인
+            if (player.IsOwner)
+            {
+                player.GetComponent<HandDisplay>().DisplayHand(GetPlayerHandCards(player));
+            }
+        }
+        fieldDeckDisplay.DisplayFieldDeck();
     }
 }
