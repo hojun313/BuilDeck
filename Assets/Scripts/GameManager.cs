@@ -233,6 +233,9 @@ public class GameManager : NetworkBehaviour
 
     public void AdvanceTurn()
     {
+        // 현재 턴 플레이어의 hasUsedTrashAndRefill 상태를 초기화합니다.
+        players[currentPlayerIndex].hasUsedTrashAndRefill.Value = false;
+
         currentPlayerIndex = (currentPlayerIndex + 1) % players.Count;
         Debug.Log("Current turn: " + players[currentPlayerIndex].playerName);
         UpdateTurnInfo(); // 턴 정보를 UI에 업데이트
@@ -507,12 +510,27 @@ public class GameManager : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     public void RequestTrashAndRefillServerRpc(ServerRpcParams rpcParams = default)
     {
-        if (players[currentPlayerIndex].OwnerClientId != rpcParams.Receive.SenderClientId)
+        Player requestingPlayer = players.Find(p => p.OwnerClientId == rpcParams.Receive.SenderClientId);
+        if (requestingPlayer == null)
         {
-            Debug.LogWarning("A non-turn player tried to trash and refill the field deck.");
+            Debug.LogError($"Requesting player not found for clientId: {rpcParams.Receive.SenderClientId}");
             return;
         }
+
+        if (players[currentPlayerIndex] != requestingPlayer)
+        {
+            Debug.LogWarning($"{requestingPlayer.playerName} tried to trash and refill the field deck, but it's not their turn.");
+            return;
+        }
+
+        if (requestingPlayer.hasUsedTrashAndRefill.Value)
+        {
+            Debug.LogWarning($"{requestingPlayer.playerName} already used Trash and Refill this turn.");
+            return;
+        }
+
         TrashAndRefillFieldDeck();
+        requestingPlayer.hasUsedTrashAndRefill.Value = true; // 사용했음을 표시
     }
 
     public void DeclareStop()

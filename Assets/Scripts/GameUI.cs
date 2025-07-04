@@ -46,10 +46,10 @@ public class GameUI : MonoBehaviour
     {
         bool isPlaying = currentState == GameManager.GameState.Playing;
 
-        // Trash and Refill 버튼은 현재 플레이어의 턴에만 활성화
+        // Trash and Refill 버튼은 현재 플레이어의 턴에만 활성화되며, 아직 사용하지 않았을 때만 활성화
         if (trashAndRefillButton != null) 
         {
-            trashAndRefillButton.interactable = isPlaying && (currentPlayer != null && gameManager.players[gameManager.currentPlayerIndex] == currentPlayer);
+            trashAndRefillButton.interactable = isPlaying && (currentPlayer != null && gameManager.players[gameManager.currentPlayerIndex] == currentPlayer && !currentPlayer.hasUsedTrashAndRefill.Value);
         }
         // Declare Stop 버튼은 현재 플레이어의 턴에만 활성화
         if (declareStopButton != null) 

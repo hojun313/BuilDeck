@@ -9,6 +9,7 @@ public class Player : NetworkBehaviour
 {
     public NetworkList<ulong> handNetworkIds; // 카드의 NetworkObjectId를 저장
     public string playerName;
+    public NetworkVariable<bool> hasUsedTrashAndRefill = new NetworkVariable<bool>(false); // 현재 턴에 필드 덱 리필을 사용했는지 여부
 
     void Awake()
     {
