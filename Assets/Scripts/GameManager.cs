@@ -104,7 +104,7 @@ public class GameManager : NetworkBehaviour
         {
             foreach (Card.Rank rank in System.Enum.GetValues(typeof(Card.Rank)))
             {
-                GameObject newCardObject = Instantiate(cardPrefab, transform.position, Quaternion.identity);
+                GameObject newCardObject = Instantiate(cardPrefab, new Vector3(0, -10, 0), Quaternion.identity); // 초기에 보이지 않는 위치로 설정
                 Card newCard = newCardObject.GetComponent<Card>();
                 newCard.cardSuit.Value = suit;
                 newCard.cardRank.Value = rank;
