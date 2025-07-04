@@ -85,4 +85,17 @@ public class CardDisplay : MonoBehaviour
             default: return "?";
         }
     }
+
+    void OnMouseDown()
+    {
+        // NetworkManager가 초기화되지 않았거나, 게임이 시작되지 않았다면 아무것도 하지 않음
+        if (FindObjectOfType<GameManager>() == null) return;
+
+        // 로컬 플레이어를 찾아 카드 선택을 요청합니다.
+        Player localPlayer = FindObjectOfType<Player>(); // 간단하게 첫 번째 플레이어를 찾습니다. 더 나은 방법은 NetworkManager.Singleton.LocalClient.PlayerObject를 사용하는 것입니다.
+        if (localPlayer != null && localPlayer.IsOwner)
+        {
+            localPlayer.RequestSelectCard(GetComponent<Card>());
+        }
+    }
 }

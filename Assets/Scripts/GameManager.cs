@@ -240,6 +240,9 @@ public class GameManager : NetworkBehaviour
 
     public void HandleCardSelection(Card card)
     {
+        // 이 메서드는 이제 서버에서만 실행됩니다.
+        if (!IsServer) return;
+
         Player currentPlayer = players[currentPlayerIndex];
 
         // 게임이 플레이 중 상태가 아니면 카드 선택을 막습니다.
@@ -252,13 +255,6 @@ public class GameManager : NetworkBehaviour
         // 이 카드가 현재 플레이어의 핸드에 있는지 확인
         if (currentPlayer.handNetworkIds.Contains(card.NetworkObjectId))
         {
-            // 현재 턴 플레이어의 카드인지 확인
-            if (card.ownerClientId.Value != currentPlayer.OwnerClientId)
-            {
-                Debug.LogWarning("Cannot select another player's card.");
-                return;
-            }
-
             if (selectedCardFromHand == card) // 이미 선택된 핸드 카드를 다시 클릭한 경우
             {
                 selectedCardFromHand.GetComponent<CardDisplay>().SetSelected(false);
@@ -301,6 +297,43 @@ public class GameManager : NetworkBehaviour
         if (selectedCardFromHand != null && selectedCardFromField != null)
         {
             SwapSelectedCards();
+        }
+    }
+
+    [ServerRpc(RequireOwnership = false)] // 모든 클라이언트가 호출할 수 있도록 설정
+    public void SelectCardServerRpc(ulong networkObjectId, ServerRpcParams rpcParams = default)
+    {
+        var clientId = rpcParams.Receive.SenderClientId;
+        Player requestingPlayer = null;
+        foreach (var p in players)
+        {
+            if (p.OwnerClientId == clientId)
+            {
+                requestingPlayer = p;
+                break;
+            }
+        }
+
+        if (requestingPlayer == null)
+        {
+            Debug.LogError($"Requesting player not found for clientId: {clientId}");
+            return;
+        }
+
+        // 현재 턴의 플레이어인지 확인
+        if (players[currentPlayerIndex] != requestingPlayer)
+        {
+            Debug.LogWarning($"{requestingPlayer.playerName} tried to select a card, but it's not their turn.");
+            return;
+        }
+
+        if (NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(networkObjectId, out NetworkObject networkObject))
+        {
+            Card card = networkObject.GetComponent<Card>();
+            if (card != null)
+            {
+                HandleCardSelection(card);
+            }
         }
     }
 

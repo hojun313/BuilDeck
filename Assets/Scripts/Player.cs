@@ -55,6 +55,17 @@ public class Player : NetworkBehaviour
         }
     }
 
+    public void RequestSelectCard(Card card)
+    {
+        if (!IsOwner) return; // 자기 자신만 카드 선택을 요청할 수 있습니다.
+
+        GameManager gameManager = FindObjectOfType<GameManager>();
+        if (gameManager != null)
+        {
+            gameManager.SelectCardServerRpc(card.NetworkObjectId);
+        }
+    }
+
     public enum PokerHandRank
     {
         HighCard = 0,
