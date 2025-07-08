@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 public class DeckPileDisplay : NetworkBehaviour
 {
-    public GameObject cardPrefab; // 카드 프리팹
+    public GameObject cardBackVisualPrefab; // 카드 뒷면 시각화 프리팹
     public Transform mainDeckPosition; // 메인 덱이 표시될 위치
     public Transform discardPilePosition; // 죽은 카드 더미가 표시될 위치
     public float cardStackOffset = 0.01f; // 카드 스택의 z-오프셋
@@ -67,7 +67,8 @@ public class DeckPileDisplay : NetworkBehaviour
             {
                 GameObject cardBackInstance = Instantiate(cardBackVisualPrefab, positionTransform.position, Quaternion.identity, positionTransform);
                 // 카드를 뒷면으로 보이게 회전 (필요하다면)
-                cardBackInstance.transform.localRotation = Quaternion.Euler(0, 180, 0); // Y축 180도 회전
+                // cardBackInstance.transform.localRotation = Quaternion.Euler(0, 180, 0); // Y축 180도 회전 제거
+                cardBackInstance.transform.localRotation = Quaternion.identity; // 기본 회전으로 설정
                 // 스택처럼 보이게 약간의 Z 오프셋 적용
                 cardBackInstance.transform.localPosition = new Vector3(0, 0, -i * cardStackOffset);
                 cardBackInstance.SetActive(true);
