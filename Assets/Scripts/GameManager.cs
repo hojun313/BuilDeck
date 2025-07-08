@@ -294,6 +294,8 @@ public class GameManager : NetworkBehaviour
 
         Player currentPlayer = players[currentPlayerIndex];
 
+        Debug.Log($"[GameManager] HandleCardSelection for {card.name}. Current Hand Selection: {(selectedCardFromHand != null ? selectedCardFromHand.name : "None")}, Field Selection: {(selectedCardFromField != null ? selectedCardFromField.name : "None")}");
+
         // 게임이 플레이 중 상태가 아니면 카드 선택을 막습니다.
         if (currentState != GameState.Playing)
         {
@@ -306,19 +308,20 @@ public class GameManager : NetworkBehaviour
         {
             if (selectedCardFromHand == card) // 이미 선택된 핸드 카드를 다시 클릭한 경우
             {
+                Debug.Log($"[GameManager] Deselecting already selected hand card: {card.name}");
                 selectedCardFromHand.isSelected.Value = false;
                 selectedCardFromHand = null;
-                Debug.Log("Deselected from hand: " + card.name);
             }
             else
             {
                 if (selectedCardFromHand != null)
                 {
+                    Debug.Log($"[GameManager] Deselecting previous hand card: {selectedCardFromHand.name}");
                     selectedCardFromHand.isSelected.Value = false;
                 }
                 selectedCardFromHand = card;
                 selectedCardFromHand.isSelected.Value = true;
-                Debug.Log("Selected from hand: " + card.name);
+                Debug.Log($"[GameManager] Selected from hand: {card.name}");
             }
         }
         // 이 카드가 필드 덱에 있는지 확인 (필드 덱 카드는 항상 선택 가능)
@@ -326,25 +329,27 @@ public class GameManager : NetworkBehaviour
         {
             if (selectedCardFromField == card) // 이미 선택된 필드 카드를 다시 클릭한 경우
             {
+                Debug.Log($"[GameManager] Deselecting already selected field card: {card.name}");
                 selectedCardFromField.isSelected.Value = false;
                 selectedCardFromField = null;
-                Debug.Log("Deselected from field: " + card.name);
             }
             else
             {
                 if (selectedCardFromField != null)
                 {
+                    Debug.Log($"[GameManager] Deselecting previous field card: {selectedCardFromField.name}");
                     selectedCardFromField.isSelected.Value = false;
                 }
                 selectedCardFromField = card;
                 selectedCardFromField.isSelected.Value = true;
-                Debug.Log("Selected from field: " + card.name);
+                Debug.Log($"[GameManager] Selected from field: {card.name}");
             }
         }
 
         // 두 카드가 모두 선택되었으면 교환을 시도합니다.
         if (selectedCardFromHand != null && selectedCardFromField != null)
         {
+            Debug.Log("[GameManager] Both hand and field cards selected. Attempting swap.");
             SwapSelectedCards();
         }
     }

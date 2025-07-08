@@ -1,5 +1,6 @@
 using UnityEngine;
 using TMPro;
+using System.Collections;
 
 public class CardDisplay : MonoBehaviour
 {
@@ -19,6 +20,7 @@ public class CardDisplay : MonoBehaviour
 
     public void SetSelected(bool isSelected)
     {
+        Debug.Log($"[CardDisplay] SetSelected: {gameObject.name}, isSelected: {isSelected}, CurrentScale: {transform.localScale}");
         if (isSelected)
         {
             if (!_wasSelected)
@@ -28,7 +30,7 @@ public class CardDisplay : MonoBehaviour
                 _wasSelected = true;
             }
             transform.localScale = _currentUnselectedScale * selectedScaleMultiplier;
-            transform.localPosition = _currentBaseLocalPosition + new Vector3(0, selectedYOffset, 0);
+            // transform.localPosition = _currentBaseLocalPosition + new Vector3(0, selectedYOffset, 0); // Y축 이동 제거
         }
         else
         {
@@ -105,7 +107,40 @@ public class CardDisplay : MonoBehaviour
             if (localPlayer != null)
             {
                 localPlayer.RequestSelectCard(GetComponent<Card>());
+                StartCoroutine(PlayCardAnimation()); // 카드 선택 시 애니메이션 시작
             }
         }
+    }
+
+    private IEnumerator PlayCardAnimation()
+    {
+        Vector3 originalScale = transform.localScale;
+        Quaternion originalRotation = transform.localRotation;
+
+        // 스케일 업
+        float timer = 0f;
+        float duration = 0.1f; // 애니메이션 지속 시간
+        Vector3 targetScale = originalScale * 1.1f; // 10% 커지게
+        while (timer < duration)
+        {
+            transform.localScale = Vector3.Lerp(originalScale, targetScale, timer / duration);
+            timer += Time.deltaTime;
+            yield return null;
+        }
+        transform.localScale = targetScale;
+
+        // 스케일 다운 및 약간의 회전
+        timer = 0f;
+        duration = 0.1f; // 애니메이션 지속 시간
+        Quaternion targetRotation = originalRotation * Quaternion.Euler(0, 0, 5); // 5도 회전
+        while (timer < duration)
+        {
+            // transform.localScale = Vector3.Lerp(targetScale, originalScale, timer / duration); // 이 줄을 제거
+            transform.localRotation = Quaternion.Lerp(originalRotation, targetRotation, timer / duration);
+            timer += Time.deltaTime;
+            yield return null;
+        }
+        // transform.localScale = originalScale; // 이 줄을 제거
+        transform.localRotation = originalRotation;
     }
 }

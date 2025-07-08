@@ -41,6 +41,7 @@ public class Card : NetworkBehaviour
 
     private void OnSelectedChanged(bool previousValue, bool newValue)
     {
+        Debug.Log($"[Card] OnSelectedChanged: {gameObject.name}, Previous: {previousValue}, New: {newValue}, IsOwner: {IsOwner}, IsClient: {IsClient}, IsServer: {IsServer}");
         if (cardDisplay != null)
         {
             cardDisplay.SetSelected(newValue);
