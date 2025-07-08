@@ -1931,6 +1931,7 @@ MonoBehaviour:
   fieldDeckSize: 5
   fieldDeckDisplay: {fileID: 987064341}
   gameUI: {fileID: 0}
+  cardPlayParticlePrefab: {fileID: 3711834224008889803, guid: 04afdff6889f5b74eb210bef48c5a0f6, type: 3}
 --- !u!4 &1686099673
 Transform:
   m_ObjectHideFlags: 0

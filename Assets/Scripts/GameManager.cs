@@ -31,6 +31,7 @@ public class GameManager : NetworkBehaviour
     public int fieldDeckSize = 5; // 필드 덱의 카드 수
     public FieldDeckDisplay fieldDeckDisplay; // 필드 덱 디스플레이 참조
     public GameUI gameUI; // GameUI 참조
+    public GameObject cardPlayParticlePrefab; // 카드 플레이 파티클 프리팹
 
     private const float cardMoveDuration = 0.3f; // 카드 이동 애니메이션 지속 시간
 
@@ -445,7 +446,22 @@ public class GameManager : NetworkBehaviour
         selectedCardFromHand = null;
         selectedCardFromField = null;
 
+        // 파티클 효과 재생 (교환된 카드 위치에서)
+        PlayCardParticleClientRpc(playerCard.transform.position);
+
         AdvanceTurn(); // 턴 넘기기
+    }
+
+    [ClientRpc]
+    void PlayCardParticleClientRpc(Vector3 position)
+    {
+        if (cardPlayParticlePrefab != null)
+        {
+            GameObject particleInstance = Instantiate(cardPlayParticlePrefab, position, Quaternion.identity);
+            // 파티클 시스템이 자동으로 재생되도록 설정되어 있다고 가정합니다.
+            // 필요하다면 여기서 particleInstance.GetComponent<ParticleSystem>().Play(); 를 호출할 수 있습니다.
+            Destroy(particleInstance, 2f); // 2초 후 파티클 오브젝트 파괴
+        }
     }
 
     private IEnumerator AnimateCardSwap(Card playerCard, Card fieldCard, Transform playerHandParent, Transform fieldDeckParent, int playerCardOriginalIndex, int fieldCardOriginalIndex)

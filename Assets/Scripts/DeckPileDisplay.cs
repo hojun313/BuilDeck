@@ -55,35 +55,23 @@ public class DeckPileDisplay : NetworkBehaviour
 
     private void UpdateDeckDisplay(GameObject displayObject, Transform positionTransform, int count)
     {
-        if (count > 0)
+        // 이전에 생성된 모든 카드 뒷면 시각화 오브젝트를 파괴합니다.
+        foreach (Transform child in positionTransform)
         {
-            if (displayObject == null)
-            {
-                // 카드 프리팹을 사용하여 뒷면 카드 생성
-                displayObject = Instantiate(cardPrefab, positionTransform.position, Quaternion.identity, positionTransform);
-                // 카드를 뒷면으로 보이게 회전 (필요하다면)
-                displayObject.transform.localRotation = Quaternion.Euler(0, 180, 0); // Y축 180도 회전
-            }
-            // 스택처럼 보이게 약간의 Z 오프셋 적용
-            displayObject.transform.localPosition = new Vector3(0, 0, -count * cardStackOffset);
-            displayObject.SetActive(true);
-        }
-        else
-        {
-            if (displayObject != null)
-            {
-                displayObject.SetActive(false);
-            }
+            Destroy(child.gameObject);
         }
 
-        // 현재 표시 객체 업데이트 (메인 덱 또는 죽은 카드 더미)
-        if (positionTransform == mainDeckPosition)
+        if (count > 0)
         {
-            currentMainDeckDisplay = displayObject;
-        }
-        else if (positionTransform == discardPilePosition)
-        {
-            currentDiscardPileDisplay = displayObject;
+            for (int i = 0; i < count; i++)
+            {
+                GameObject cardBackInstance = Instantiate(cardBackVisualPrefab, positionTransform.position, Quaternion.identity, positionTransform);
+                // 카드를 뒷면으로 보이게 회전 (필요하다면)
+                cardBackInstance.transform.localRotation = Quaternion.Euler(0, 180, 0); // Y축 180도 회전
+                // 스택처럼 보이게 약간의 Z 오프셋 적용
+                cardBackInstance.transform.localPosition = new Vector3(0, 0, -i * cardStackOffset);
+                cardBackInstance.SetActive(true);
+            }
         }
     }
 }
