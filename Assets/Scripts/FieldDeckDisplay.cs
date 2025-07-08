@@ -61,7 +61,7 @@ public class FieldDeckDisplay : NetworkBehaviour
                     Vector3 newPosition = startPosition + new Vector3(i * cardSpacing, 0, 0);
                     cardGo.transform.localPosition = newPosition;
                     cardGo.transform.localRotation = Quaternion.identity;
-                    cardGo.transform.localScale = Vector3.one;
+                    cardGo.transform.localScale = new Vector3(0.7f, 1f, 1f);
 
                     // 카드의 선택 상태를 리셋하여 현재 위치를 기준으로 다시 선택 효과가 적용되도록 합니다.
                     card.GetComponent<CardDisplay>()?.ResetSelectionState();

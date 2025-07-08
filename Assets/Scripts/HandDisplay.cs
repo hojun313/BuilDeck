@@ -45,7 +45,7 @@ public class HandDisplay : MonoBehaviour
 
                 // 카드를 중앙을 향해 기울임
                 card.transform.localRotation = Quaternion.Euler(0, 0, -angle);
-                card.transform.localScale = Vector3.one;
+                card.transform.localScale = new Vector3(0.7f, 1f, 1f);
 
                 // 카드의 선택 상태를 리셋하여 현재 위치를 기준으로 다시 선택 효과가 적용되도록 합니다.
                 card.GetComponent<CardDisplay>()?.ResetSelectionState();
