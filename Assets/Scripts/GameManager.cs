@@ -280,6 +280,7 @@ public class GameManager : NetworkBehaviour
 
     public void AdvanceTurn()
     {
+        Debug.Log("AdvanceTurn called."); // Added
         // 현재 턴 플레이어의 hasUsedTrashAndRefill 상태를 초기화합니다.
         players[currentPlayerIndex].hasUsedTrashAndRefill.Value = false;
 
@@ -598,7 +599,13 @@ public class GameManager : NetworkBehaviour
         }
 
         TrashAndRefillFieldDeck();
-        requestingPlayer.hasUsedTrashAndRefill.Value = true; // 사용했음을 표시
+        requestingPlayer.hasUsedTrashAndRefill.Value = true; // Mark as used
+
+        // New: Update UI after state change
+        if (gameUI != null)
+        {
+            gameUI.UpdateButtonStates(currentState, requestingPlayer);
+        }
     }
 
     public void DeclareStop()

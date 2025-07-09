@@ -2,7 +2,8 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using System.Collections; // Coroutine을 위해 추가
+using System.Collections;
+using Unity.Netcode; // Added for NetworkVariable access if needed, though Player has it
 
 public class GameUI : MonoBehaviour
 {
@@ -10,14 +11,16 @@ public class GameUI : MonoBehaviour
 
     public Button trashAndRefillButton;
     public Button declareStopButton;
-    public TextMeshProUGUI statusText; // 상태 메시지를 표시할 텍스트
+    public TextMeshProUGUI statusText;
 
-    private const float buttonPressScale = 0.9f; // 버튼이 눌렸을 때의 스케일
-    private const float buttonAnimationDuration = 0.1f; // 버튼 애니메이션 지속 시간
+    public Sprite trashAndRefillNormalSprite; // New: Assign normal sprite in Inspector
+    public Sprite trashAndRefillUsedSprite;   // New: Assign used/disabled sprite in Inspector
+
+    private const float buttonPressScale = 0.9f;
+    private const float buttonAnimationDuration = 0.1f;
 
     void Start()
     {
-        // GameManager 참조를 자동으로 찾거나, Inspector에서 연결하도록 합니다.
         if (gameManager == null)
         {
             gameManager = FindObjectOfType<GameManager>();
@@ -29,7 +32,6 @@ public class GameUI : MonoBehaviour
             return;
         }
 
-        // 버튼 클릭 이벤트 리스너 추가
         if (trashAndRefillButton != null)
         {
             trashAndRefillButton.onClick.AddListener(() => StartCoroutine(AnimateButtonPress(trashAndRefillButton)));
@@ -44,15 +46,38 @@ public class GameUI : MonoBehaviour
 
     public void UpdateButtonStates(GameManager.GameState currentState, Player currentPlayer)
     {
+        Debug.Log("UpdateButtonStates called. CurrentState: " + currentState + ", CurrentPlayer: " + (currentPlayer != null ? currentPlayer.playerName : "None")); // Added
         bool isPlaying = currentState == GameManager.GameState.Playing;
 
-        // Trash and Refill 버튼은 현재 플레이어의 턴에만 활성화되며, 아직 사용하지 않았을 때만 활성화
-        if (trashAndRefillButton != null) 
+        // Trash and Refill button logic
+        // Check if it's the current player's turn AND if that current player is the local player
+        bool isLocalPlayersTurn = (currentPlayer != null && currentPlayer.IsOwner); // New condition
+        bool canUseTrashAndRefill = isPlaying && isLocalPlayersTurn && !currentPlayer.hasUsedTrashAndRefill.Value; // Modified
+        Debug.Log("canUseTrashAndRefill: " + canUseTrashAndRefill); // Added
+
+        if (trashAndRefillButton != null)
         {
-            trashAndRefillButton.interactable = isPlaying && (currentPlayer != null && gameManager.players[gameManager.currentPlayerIndex] == currentPlayer && !currentPlayer.hasUsedTrashAndRefill.Value);
+            Debug.Log("Button Image component found: " + (trashAndRefillButton.GetComponent<Image>() != null)); // Added
+            trashAndRefillButton.interactable = canUseTrashAndRefill;
+
+            // Visual feedback for used state
+            Image buttonImage = trashAndRefillButton.GetComponent<Image>();
+            if (buttonImage != null)
+            {
+                if (canUseTrashAndRefill)
+                {
+                    buttonImage.sprite = trashAndRefillNormalSprite;
+                }
+                else
+                {
+                    Debug.Log("Attempting to set used sprite. Sprite is null: " + (trashAndRefillUsedSprite == null)); // Added
+                    buttonImage.sprite = trashAndRefillUsedSprite;
+                }
+            }
         }
-        // Declare Stop 버튼은 현재 플레이어의 턴에만 활성화
-        if (declareStopButton != null) 
+
+        // Declare Stop button logic
+        if (declareStopButton != null)
         {
             declareStopButton.interactable = isPlaying && (currentPlayer != null && gameManager.players[gameManager.currentPlayerIndex] == currentPlayer);
         }
@@ -83,7 +108,6 @@ public class GameUI : MonoBehaviour
         Vector3 originalScale = button.transform.localScale;
         Vector3 pressedScale = originalScale * buttonPressScale;
 
-        // 버튼 누르는 애니메이션
         float timer = 0f;
         while (timer < buttonAnimationDuration)
         {
@@ -91,9 +115,8 @@ public class GameUI : MonoBehaviour
             button.transform.localScale = Vector3.Lerp(originalScale, pressedScale, timer / buttonAnimationDuration);
             yield return null;
         }
-        button.transform.localScale = pressedScale; // 정확히 눌린 스케일로 설정
+        button.transform.localScale = pressedScale;
 
-        // 버튼 원래대로 돌아오는 애니메이션
         timer = 0f;
         while (timer < buttonAnimationDuration)
         {
@@ -101,6 +124,6 @@ public class GameUI : MonoBehaviour
             button.transform.localScale = Vector3.Lerp(pressedScale, originalScale, timer / buttonAnimationDuration);
             yield return null;
         }
-        button.transform.localScale = originalScale; // 정확히 원래 스케일로 설정
+        button.transform.localScale = originalScale;
     }
 }

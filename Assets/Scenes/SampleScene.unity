@@ -152,6 +152,8 @@ MonoBehaviour:
   trashAndRefillButton: {fileID: 1164914268}
   declareStopButton: {fileID: 2018839207}
   statusText: {fileID: 1037155404}
+  trashAndRefillNormalSprite: {fileID: 21300000, guid: 47bab992ec788c143b238f8a479ccd3a, type: 3}
+  trashAndRefillUsedSprite: {fileID: 21300000, guid: 947c7a59a6f39444aa8652db008077f1, type: 3}
 --- !u!4 &313433639
 Transform:
   m_ObjectHideFlags: 0
