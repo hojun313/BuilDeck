@@ -612,7 +612,11 @@ public class GameManager : NetworkBehaviour
     {
         currentState = GameState.GameOver;
         Debug.Log(players[currentPlayerIndex].playerName + " declared stop! Game is over. Proceeding to result checking.");
-        if (gameUI != null) gameUI.UpdateButtonStates(currentState, null); // currentPlayer를 null로 전달
+        if (gameUI != null) 
+        {
+            gameUI.UpdateButtonStates(currentState, null); // currentPlayer를 null로 전달
+            ShowRestartButtonClientRpc();
+        }
         DetermineWinner();
     }
 
@@ -694,6 +698,31 @@ public class GameManager : NetworkBehaviour
             }
         }
         Debug.Log("--------------------------");
+    }
+
+    [ClientRpc]
+    void ShowRestartButtonClientRpc()
+    {
+        if (gameUI != null)
+        {
+            gameUI.ShowRestartButton();
+        }
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    public void RequestRestartGameServerRpc()
+    {
+        RestartGameClientRpc();
+    }
+
+    [ClientRpc]
+    void RestartGameClientRpc()
+    {
+        if (NetworkManager.Singleton != null)
+        {
+            NetworkManager.Singleton.Shutdown();
+        }
+        UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
     }
 
     void Update()

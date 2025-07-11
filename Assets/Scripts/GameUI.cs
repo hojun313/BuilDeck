@@ -11,6 +11,7 @@ public class GameUI : MonoBehaviour
 
     public Button trashAndRefillButton;
     public Button declareStopButton;
+    public Button restartButton; // 다시 시작 버튼
     public TextMeshProUGUI statusText;
 
     public GameObject jokboPanel; // 족보 패널
@@ -51,9 +52,31 @@ public class GameUI : MonoBehaviour
             jokboButton.onClick.AddListener(ToggleJokboPanel);
         }
 
-        if(jokboPanel != null)
+        if (jokboPanel != null)
         {
             jokboPanel.SetActive(false);
+        }
+
+        if (restartButton != null)
+        {
+            restartButton.gameObject.SetActive(false);
+            restartButton.onClick.AddListener(OnRestartButtonClicked);
+        }
+    }
+
+    void OnRestartButtonClicked()
+    {
+        if (gameManager != null)
+        {
+            gameManager.RequestRestartGameServerRpc();
+        }
+    }
+
+    public void ShowRestartButton()
+    {
+        if (restartButton != null)
+        {
+            restartButton.gameObject.SetActive(true);
         }
     }
 
