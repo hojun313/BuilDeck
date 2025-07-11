@@ -59,7 +59,8 @@ public class FieldDeckDisplay : NetworkBehaviour
 
                     // 카드 위치 설정
                     Vector3 newPosition = startPosition + new Vector3(i * cardSpacing, 0, 0);
-                    cardGo.transform.localPosition = newPosition;
+                    // cardGo.transform.localPosition = newPosition; // 즉시 이동 대신 애니메이션 호출
+                    card.MoveTo(transform.TransformPoint(newPosition), 0.3f);
                     cardGo.transform.localRotation = Quaternion.identity;
                     cardGo.transform.localScale = new Vector3(0.7f, 1f, 1f);
 

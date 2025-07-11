@@ -41,7 +41,8 @@ public class HandDisplay : MonoBehaviour
                 float y = -arcRadius * Mathf.Cos(radian) + arcRadius; // 카드를 위로 올리는 효과
 
                 Vector3 newPosition = startPosition + new Vector3(x, y, i * -0.01f); // z값으로 카드 순서 보장
-                card.transform.localPosition = newPosition;
+                // card.transform.localPosition = newPosition; // 즉시 이동 대신 애니메이션 호출
+                card.MoveTo(transform.TransformPoint(newPosition), 0.3f);
 
                 // 카드를 중앙을 향해 기울임
                 card.transform.localRotation = Quaternion.Euler(0, 0, -angle);

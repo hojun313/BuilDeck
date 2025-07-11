@@ -47,4 +47,22 @@ public class Card : NetworkBehaviour
             cardDisplay.SetSelected(newValue);
         }
     }
+
+    public void MoveTo(Vector3 targetPosition, float duration)
+    {
+        StartCoroutine(AnimateMove(transform.position, targetPosition, duration));
+    }
+
+    private System.Collections.IEnumerator AnimateMove(Vector3 startPos, Vector3 endPos, float duration)
+    {
+        float timer = 0f;
+        while (timer < duration)
+        {
+            timer += Time.deltaTime;
+            float t = Mathf.Clamp01(timer / duration);
+            transform.position = Vector3.Lerp(startPos, endPos, t);
+            yield return null;
+        }
+        transform.position = endPos;
+    }
 }
