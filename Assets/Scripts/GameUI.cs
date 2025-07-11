@@ -149,6 +149,8 @@ public class GameUI : MonoBehaviour
 
     private IEnumerator AnimateButtonPress(Button button)
     {
+        SoundManager.Instance.PlaySound(SoundManager.Instance.buttonClickSound);
+
         Vector3 originalScale = button.transform.localScale;
         Vector3 pressedScale = originalScale * buttonPressScale;
 

@@ -449,6 +449,7 @@ public class GameManager : NetworkBehaviour
 
         // 파티클 효과 재생 (교환된 카드 위치에서)
         PlayCardParticleClientRpc(playerCard.transform.position);
+        PlaySwapSoundClientRpc();
 
         AdvanceTurn(); // 턴 넘기기
     }
@@ -462,6 +463,15 @@ public class GameManager : NetworkBehaviour
             // 파티클 시스템이 자동으로 재생되도록 설정되어 있다고 가정합니다.
             // 필요하다면 여기서 particleInstance.GetComponent<ParticleSystem>().Play(); 를 호출할 수 있습니다.
             Destroy(particleInstance, 2f); // 2초 후 파티클 오브젝트 파괴
+        }
+    }
+
+    [ClientRpc]
+    void PlaySwapSoundClientRpc()
+    {
+        if (SoundManager.Instance != null)
+        {
+            SoundManager.Instance.PlaySound(SoundManager.Instance.cardSwapSound);
         }
     }
 
