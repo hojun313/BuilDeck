@@ -13,6 +13,9 @@ public class GameUI : MonoBehaviour
     public Button declareStopButton;
     public TextMeshProUGUI statusText;
 
+    public GameObject jokboPanel; // 족보 패널
+    public Button jokboButton; // 족보 보기 버튼
+
     public Sprite trashAndRefillNormalSprite; // New: Assign normal sprite in Inspector
     public Sprite trashAndRefillUsedSprite;   // New: Assign used/disabled sprite in Inspector
 
@@ -41,6 +44,24 @@ public class GameUI : MonoBehaviour
         {
             declareStopButton.onClick.AddListener(() => StartCoroutine(AnimateButtonPress(declareStopButton)));
             declareStopButton.onClick.AddListener(OnDeclareStopButtonClicked);
+        }
+        if (jokboButton != null)
+        {
+            jokboButton.onClick.AddListener(() => StartCoroutine(AnimateButtonPress(jokboButton)));
+            jokboButton.onClick.AddListener(ToggleJokboPanel);
+        }
+
+        if(jokboPanel != null)
+        {
+            jokboPanel.SetActive(false);
+        }
+    }
+
+    void ToggleJokboPanel()
+    {
+        if (jokboPanel != null)
+        {
+            jokboPanel.SetActive(!jokboPanel.activeSelf);
         }
     }
 
