@@ -2,7 +2,7 @@
 
 [![Made with Unity](https://img.shields.io/badge/Made%20with-Unity-57b9d3.svg?style=for-the-badge&logo=unity)](https://unity.com)
 
-카드를 조합하여 나만의 덱을 만들고 전투에서 승리하세요! "있고 없고" 규칙을 기반으로 한 새로운 전략 카드 게임입니다.
+카드를 조합하여 나만의 덱을 만들고 전투에서 승리하세요! "포커 족보"를 기반으로 한 새로운 전략 카드 게임입니다.
 
 ## 🎮 게임 소개
 
