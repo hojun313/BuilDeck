@@ -739,7 +739,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -368.5, y: 99}
+  m_AnchoredPosition: {x: -368.49997, y: 99}
   m_SizeDelta: {x: -743, y: -202}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &413517582
@@ -2911,6 +2911,7 @@ MonoBehaviour:
   serverButton: {fileID: 2104447100}
   buttonsPanel: {fileID: 1964602097}
   gameUIPanel: {fileID: 1978390556}
+  gameUI: {fileID: 313433638}
 --- !u!4 &1968818561
 Transform:
   m_ObjectHideFlags: 0
